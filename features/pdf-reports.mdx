@@ -1,0 +1,608 @@
+---
+title: 'PDF Report Generation'
+description: 'Automated creation of comprehensive nutritional reports using fpdf2 for patient documentation'
+icon: 'file-pdf'
+---
+
+## Overview
+
+SANL's PDF report generation system creates professional, comprehensive nutritional assessment reports for patients and healthcare providers. Built with fpdf2, the system generates customizable reports that include intake summaries, trend analysis, AI insights, and clinical recommendations.
+
+<Note>
+All reports are generated on-demand and can be customized based on user role, date range, and report type.
+</Note>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Professional Formatting" icon="file-lines">
+    Clean, clinical-grade layouts with charts and tables
+  </Card>
+  <Card title="Customizable Templates" icon="palette">
+    Different report types for various clinical needs
+  </Card>
+  <Card title="Data Visualization" icon="chart-simple">
+    Embedded graphs and nutritional breakdowns
+  </Card>
+  <Card title="Multi-Language Support" icon="language">
+    Generate reports in multiple languages
+  </Card>
+</CardGroup>
+
+## Architecture
+
+The report generation system integrates:
+
+- **fpdf2**: Powerful PDF creation library with Unicode support
+- **Data Sources**: Clinical records, nutritional tracking, AI insights
+- **FastAPI**: Async report generation endpoints
+- **Supabase Storage**: Optional cloud storage for generated reports
+
+## Installation & Setup
+
+### Dependencies
+
+```txt requirements.txt
+fpdf2
+fastapi
+uvicorn
+supabase
+python-dotenv
+```
+
+### Basic Configuration
+
+```python
+from fpdf import FPDF
+from datetime import datetime
+from typing import Dict, List, Optional
+
+class NutritionalReportPDF(FPDF):
+    def __init__(self):
+        super().__init__()
+        self.set_auto_page_break(auto=True, margin=15)
+        
+    def header(self):
+        # Logo or branding
+        self.set_font('Arial', 'B', 16)
+        self.cell(0, 10, 'SANL - Nutritional Health Report', 0, 1, 'C')
+        self.ln(5)
+        
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
+```
+
+## Report Types
+
+<Tabs>
+  <Tab title="Patient Summary">
+    ### Comprehensive Patient Report
+
+    Generate a complete nutritional summary for patients:
+
+    ```python
+    from fastapi import APIRouter, HTTPException, Response
+    from datetime import datetime, timedelta
+
+    router = APIRouter()
+
+    @router.get("/api/reports/patient-summary/{patient_id}")
+    async def generate_patient_summary_report(
+        patient_id: str,
+        days: int = 30,
+        include_ai_insights: bool = True
+    ):
+        try:
+            # Fetch patient data
+            clinical_record = supabase.table("clinical_records") \
+                .select("*") \
+                .eq("patient_id", patient_id) \
+                .order("created_at", desc=True) \
+                .limit(1) \
+                .execute()
+            
+            if not clinical_record.data:
+                raise HTTPException(status_code=404, detail="Patient not found")
+            
+            # Fetch nutritional data
+            end_date = datetime.utcnow()
+            start_date = end_date - timedelta(days=days)
+            
+            intake = supabase.table("nutritional_intake") \
+                .select("*") \
+                .eq("patient_id", patient_id) \
+                .gte("meal_time", start_date.isoformat()) \
+                .order("meal_time", desc=True) \
+                .execute()
+            
+            goals = supabase.table("nutritional_goals") \
+                .select("*") \
+                .eq("patient_id", patient_id) \
+                .execute()
+            
+            # Create PDF
+            pdf = NutritionalReportPDF()
+            pdf.add_page()
+            
+            # Patient Information Section
+            pdf.set_font('Arial', 'B', 14)
+            pdf.cell(0, 10, 'Patient Information', 0, 1)
+            pdf.set_font('Arial', '', 11)
+            pdf.cell(0, 8, f"Report Date: {datetime.utcnow().strftime('%Y-%m-%d')}", 0, 1)
+            pdf.cell(0, 8, f"Analysis Period: {days} days", 0, 1)
+            pdf.ln(5)
+            
+            # Nutritional Summary
+            pdf.set_font('Arial', 'B', 14)
+            pdf.cell(0, 10, 'Nutritional Summary', 0, 1)
+            pdf.set_font('Arial', '', 11)
+            
+            if intake.data:
+                avg_calories = sum(item["total_calories"] for item in intake.data) / len(intake.data)
+                avg_protein = sum(item["macros"].get("protein", 0) for item in intake.data) / len(intake.data)
+                avg_carbs = sum(item["macros"].get("carbs", 0) for item in intake.data) / len(intake.data)
+                avg_fats = sum(item["macros"].get("fats", 0) for item in intake.data) / len(intake.data)
+                
+                pdf.cell(0, 8, f"Average Daily Calories: {avg_calories:.1f} kcal", 0, 1)
+                pdf.cell(0, 8, f"Average Daily Protein: {avg_protein:.1f} g", 0, 1)
+                pdf.cell(0, 8, f"Average Daily Carbohydrates: {avg_carbs:.1f} g", 0, 1)
+                pdf.cell(0, 8, f"Average Daily Fats: {avg_fats:.1f} g", 0, 1)
+            
+            pdf.ln(10)
+            
+            # Goals Comparison
+            if goals.data:
+                pdf.set_font('Arial', 'B', 14)
+                pdf.cell(0, 10, 'Goals vs. Achievement', 0, 1)
+                pdf.set_font('Arial', '', 11)
+                
+                goal = goals.data[0]
+                if intake.data:
+                    calorie_achievement = (avg_calories / goal['daily_calories']) * 100
+                    protein_achievement = (avg_protein / goal['daily_protein']) * 100
+                    
+                    pdf.cell(0, 8, f"Calorie Goal Achievement: {calorie_achievement:.1f}%", 0, 1)
+                    pdf.cell(0, 8, f"Protein Goal Achievement: {protein_achievement:.1f}%", 0, 1)
+            
+            pdf.ln(10)
+            
+            # AI Insights Section (if enabled)
+            if include_ai_insights:
+                pdf.set_font('Arial', 'B', 14)
+                pdf.cell(0, 10, 'AI-Generated Insights', 0, 1)
+                pdf.set_font('Arial', '', 10)
+                
+                # Generate AI insights
+                prompt = f"""
+                Provide a brief summary (max 200 words) of nutritional status based on:
+                - Average intake: {avg_calories:.0f} kcal, {avg_protein:.0f}g protein
+                - Goals: {goal['daily_calories']} kcal, {goal['daily_protein']}g protein
+                - Period: {days} days
+                """
+                
+                import google.generativeai as genai
+                genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+                model = genai.GenerativeModel('gemini-1.5-flash')
+                response = model.generate_content(prompt)
+                
+                # Add AI insights to PDF
+                pdf.multi_cell(0, 6, response.text)
+            
+            # Generate PDF bytes
+            pdf_bytes = pdf.output(dest='S').encode('latin-1')
+            
+            return Response(
+                content=pdf_bytes,
+                media_type="application/pdf",
+                headers={
+                    "Content-Disposition": f"attachment; filename=nutrition_report_{patient_id}_{datetime.utcnow().strftime('%Y%m%d')}.pdf"
+                }
+            )
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
+    ```
+  </Tab>
+
+  <Tab title="Weekly Progress">
+    ### Weekly Progress Report
+
+    Generate weekly tracking reports with trends:
+
+    ```python
+    @router.get("/api/reports/weekly-progress/{patient_id}")
+    async def generate_weekly_progress_report(patient_id: str, week_start: str):
+        from datetime import datetime, timedelta
+        
+        start_date = datetime.fromisoformat(week_start)
+        end_date = start_date + timedelta(days=7)
+        
+        # Fetch week's data
+        intake = supabase.table("nutritional_intake") \
+            .select("*") \
+            .eq("patient_id", patient_id) \
+            .gte("meal_time", start_date.isoformat()) \
+            .lt("meal_time", end_date.isoformat()) \
+            .order("meal_time") \
+            .execute()
+        
+        # Create PDF
+        pdf = NutritionalReportPDF()
+        pdf.add_page()
+        
+        # Title
+        pdf.set_font('Arial', 'B', 16)
+        pdf.cell(0, 10, f"Weekly Progress Report", 0, 1, 'C')
+        pdf.set_font('Arial', '', 11)
+        pdf.cell(0, 8, f"Week of {start_date.strftime('%B %d, %Y')}", 0, 1, 'C')
+        pdf.ln(10)
+        
+        # Daily breakdown
+        pdf.set_font('Arial', 'B', 12)
+        pdf.cell(0, 10, 'Daily Breakdown', 0, 1)
+        
+        # Group by day
+        daily_data = {}
+        for item in intake.data:
+            day = item["meal_time"][:10]
+            if day not in daily_data:
+                daily_data[day] = {"calories": 0, "protein": 0, "meals": 0}
+            
+            daily_data[day]["calories"] += item["total_calories"]
+            daily_data[day]["protein"] += item["macros"].get("protein", 0)
+            daily_data[day]["meals"] += 1
+        
+        # Table header
+        pdf.set_font('Arial', 'B', 10)
+        pdf.cell(60, 8, 'Date', 1)
+        pdf.cell(40, 8, 'Calories', 1)
+        pdf.cell(40, 8, 'Protein (g)', 1)
+        pdf.cell(40, 8, 'Meals Logged', 1)
+        pdf.ln()
+        
+        # Table data
+        pdf.set_font('Arial', '', 10)
+        for day, data in sorted(daily_data.items()):
+            pdf.cell(60, 8, day, 1)
+            pdf.cell(40, 8, f"{data['calories']:.0f}", 1)
+            pdf.cell(40, 8, f"{data['protein']:.1f}", 1)
+            pdf.cell(40, 8, str(data['meals']), 1)
+            pdf.ln()
+        
+        # Weekly summary
+        pdf.ln(10)
+        pdf.set_font('Arial', 'B', 12)
+        pdf.cell(0, 10, 'Weekly Summary', 0, 1)
+        pdf.set_font('Arial', '', 11)
+        
+        total_days = len(daily_data)
+        avg_calories = sum(d["calories"] for d in daily_data.values()) / total_days if total_days > 0 else 0
+        avg_protein = sum(d["protein"] for d in daily_data.values()) / total_days if total_days > 0 else 0
+        
+        pdf.cell(0, 8, f"Days with logged meals: {total_days}/7", 0, 1)
+        pdf.cell(0, 8, f"Average daily calories: {avg_calories:.0f} kcal", 0, 1)
+        pdf.cell(0, 8, f"Average daily protein: {avg_protein:.1f} g", 0, 1)
+        
+        pdf_bytes = pdf.output(dest='S').encode('latin-1')
+        
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=weekly_progress_{patient_id}_{week_start}.pdf"
+            }
+        )
+    ```
+  </Tab>
+
+  <Tab title="Clinical Assessment">
+    ### Clinical Assessment Report
+
+    Provider-focused comprehensive assessment:
+
+    ```python
+    @router.get("/api/reports/clinical-assessment/{patient_id}")
+    async def generate_clinical_assessment(
+        patient_id: str,
+        assessment_date: Optional[str] = None
+    ):
+        # Fetch comprehensive patient data
+        clinical_records = supabase.table("clinical_records") \
+            .select("*") \
+            .eq("patient_id", patient_id) \
+            .order("created_at", desc=True) \
+            .execute()
+        
+        # Recent 30 days of intake
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=30)
+        
+        intake = supabase.table("nutritional_intake") \
+            .select("*") \
+            .eq("patient_id", patient_id) \
+            .gte("meal_time", start_date.isoformat()) \
+            .execute()
+        
+        goals = supabase.table("nutritional_goals") \
+            .select("*") \
+            .eq("patient_id", patient_id) \
+            .execute()
+        
+        # Create detailed clinical PDF
+        pdf = NutritionalReportPDF()
+        pdf.add_page()
+        
+        # Header
+        pdf.set_font('Arial', 'B', 16)
+        pdf.cell(0, 10, 'Clinical Nutritional Assessment', 0, 1, 'C')
+        pdf.ln(5)
+        
+        # Clinical History
+        pdf.set_font('Arial', 'B', 12)
+        pdf.cell(0, 10, 'Clinical History', 0, 1)
+        
+        if clinical_records.data:
+            record = clinical_records.data[0]
+            pdf.set_font('Arial', '', 10)
+            pdf.cell(0, 6, f"Diagnosis: {record.get('diagnosis', 'N/A')}", 0, 1)
+            pdf.cell(0, 6, f"Nutritional Status: {record.get('nutritional_status', 'N/A')}", 0, 1)
+            
+            if record.get('dietary_restrictions'):
+                pdf.cell(0, 6, f"Dietary Restrictions: {', '.join(record['dietary_restrictions'])}", 0, 1)
+        
+        pdf.ln(5)
+        
+        # Anthropometric Data
+        pdf.set_font('Arial', 'B', 12)
+        pdf.cell(0, 10, 'Anthropometric Data', 0, 1)
+        
+        if clinical_records.data and clinical_records.data[0].get('anthropometric_data'):
+            anthro = clinical_records.data[0]['anthropometric_data']
+            pdf.set_font('Arial', '', 10)
+            
+            for key, value in anthro.items():
+                pdf.cell(0, 6, f"{key.replace('_', ' ').title()}: {value}", 0, 1)
+        
+        pdf.ln(5)
+        
+        # Nutritional Intake Analysis (last 30 days)
+        pdf.set_font('Arial', 'B', 12)
+        pdf.cell(0, 10, 'Nutritional Intake Analysis (30 Days)', 0, 1)
+        
+        if intake.data:
+            avg_calories = sum(item["total_calories"] for item in intake.data) / len(intake.data)
+            avg_protein = sum(item["macros"].get("protein", 0) for item in intake.data) / len(intake.data)
+            compliance_rate = (len(intake.data) / 90) * 100  # Assuming 3 meals/day
+            
+            pdf.set_font('Arial', '', 10)
+            pdf.cell(0, 6, f"Entries Logged: {len(intake.data)}", 0, 1)
+            pdf.cell(0, 6, f"Compliance Rate: {compliance_rate:.1f}%", 0, 1)
+            pdf.cell(0, 6, f"Average Daily Calories: {avg_calories:.0f} kcal", 0, 1)
+            pdf.cell(0, 6, f"Average Daily Protein: {avg_protein:.1f} g", 0, 1)
+        
+        pdf.ln(5)
+        
+        # Clinical Recommendations
+        pdf.set_font('Arial', 'B', 12)
+        pdf.cell(0, 10, 'Clinical Recommendations', 0, 1)
+        pdf.set_font('Arial', '', 10)
+        
+        # Generate AI recommendations for provider
+        import google.generativeai as genai
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        prompt = f"""
+        As a clinical nutritionist, provide professional recommendations for:
+        
+        Patient Status: {clinical_records.data[0] if clinical_records.data else {}}
+        30-Day Intake Summary: {len(intake.data)} entries logged
+        Average intake: {avg_calories:.0f} kcal, {avg_protein:.0f}g protein
+        
+        Provide:
+        1. Clinical assessment
+        2. Intervention recommendations
+        3. Follow-up suggestions
+        4. Patient education topics
+        
+        Keep professional and concise (max 250 words).
+        """
+        
+        response = model.generate_content(prompt)
+        pdf.multi_cell(0, 6, response.text)
+        
+        # Generate PDF
+        pdf_bytes = pdf.output(dest='S').encode('latin-1')
+        
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=clinical_assessment_{patient_id}_{datetime.utcnow().strftime('%Y%m%d')}.pdf"
+            }
+        )
+    ```
+  </Tab>
+</Tabs>
+
+## Advanced Features
+
+### Adding Charts and Visualizations
+
+```python
+from fpdf import FPDF
+import matplotlib.pyplot as plt
+import io
+import base64
+
+def create_nutrition_chart(daily_data: Dict) -> bytes:
+    """Generate a chart image for embedding in PDF"""
+    dates = list(daily_data.keys())
+    calories = [daily_data[d]["calories"] for d in dates]
+    
+    plt.figure(figsize=(8, 4))
+    plt.plot(dates, calories, marker='o')
+    plt.title('Daily Caloric Intake')
+    plt.xlabel('Date')
+    plt.ylabel('Calories')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    
+    # Save to bytes
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', dpi=150)
+    buf.seek(0)
+    plt.close()
+    
+    return buf.read()
+
+# In your PDF generation:
+pdf.add_page()
+pdf.set_font('Arial', 'B', 12)
+pdf.cell(0, 10, 'Intake Trends', 0, 1)
+
+# Generate and embed chart
+chart_bytes = create_nutrition_chart(daily_data)
+
+# Save temporary image
+import tempfile
+with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp:
+    tmp.write(chart_bytes)
+    chart_path = tmp.name
+
+pdf.image(chart_path, x=10, y=None, w=190)
+```
+
+### Multi-Language Support
+
+```python
+class MultiLanguageReport(FPDF):
+    def __init__(self, language='en'):
+        super().__init__()
+        self.language = language
+        self.translations = {
+            'en': {
+                'title': 'Nutritional Health Report',
+                'patient_info': 'Patient Information',
+                'summary': 'Nutritional Summary',
+            },
+            'es': {
+                'title': 'Reporte de Salud Nutricional',
+                'patient_info': 'Información del Paciente',
+                'summary': 'Resumen Nutricional',
+            }
+        }
+    
+    def t(self, key: str) -> str:
+        """Translate key to current language"""
+        return self.translations.get(self.language, {}).get(key, key)
+    
+    def header(self):
+        self.set_font('Arial', 'B', 16)
+        self.cell(0, 10, self.t('title'), 0, 1, 'C')
+        self.ln(5)
+```
+
+### Report Storage and Retrieval
+
+```python
+@router.post("/api/reports/save/{patient_id}")
+async def save_report_to_storage(patient_id: str, report_bytes: bytes):
+    """Save generated report to Supabase Storage"""
+    filename = f"reports/{patient_id}/nutrition_report_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.pdf"
+    
+    # Upload to Supabase Storage
+    result = supabase.storage \
+        .from_('patient-reports') \
+        .upload(filename, report_bytes)
+    
+    # Store metadata in database
+    metadata = supabase.table("report_metadata").insert({
+        "patient_id": patient_id,
+        "filename": filename,
+        "report_type": "nutritional_summary",
+        "generated_at": datetime.utcnow().isoformat()
+    }).execute()
+    
+    return {
+        "success": True,
+        "filename": filename,
+        "metadata_id": metadata.data[0]["id"]
+    }
+
+@router.get("/api/reports/list/{patient_id}")
+async def list_patient_reports(patient_id: str):
+    """List all available reports for a patient"""
+    reports = supabase.table("report_metadata") \
+        .select("*") \
+        .eq("patient_id", patient_id) \
+        .order("generated_at", desc=True) \
+        .execute()
+    
+    return {"reports": reports.data}
+```
+
+## Best Practices
+
+<Tip>
+Generate reports asynchronously for large datasets to avoid blocking the API.
+</Tip>
+
+- **Consistent Formatting**: Use templates for consistent report styling
+- **Error Handling**: Validate data before PDF generation to prevent corruption
+- **File Size**: Optimize images and limit embedded data for smaller files
+- **Privacy**: Implement access controls for report downloads
+- **Versioning**: Track report versions when regenerating
+- **Accessibility**: Include text alternatives for charts and visuals
+
+<Info>
+fpdf2 supports Unicode fonts, making it ideal for multi-language healthcare applications.
+</Info>
+
+## Performance Optimization
+
+```python
+from functools import lru_cache
+import asyncio
+
+@lru_cache(maxsize=50)
+def get_report_template(report_type: str) -> FPDF:
+    """Cache report templates"""
+    if report_type == "summary":
+        return NutritionalReportPDF()
+    # Add more templates
+
+async def generate_reports_batch(patient_ids: List[str]):
+    """Generate multiple reports concurrently"""
+    tasks = [
+        generate_patient_summary_report(patient_id)
+        for patient_id in patient_ids
+    ]
+    return await asyncio.gather(*tasks)
+```
+
+## Dependencies
+
+Required packages:
+
+```txt
+fpdf2
+fastapi
+uvicorn
+supabase
+python-dotenv
+google-generativeai
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Clinical Records" icon="folder-medical" href="/features/clinical-records">
+    Manage patient data that feeds into reports
+  </Card>
+  <Card title="AI Insights" icon="brain" href="/features/ai-insights">
+    Enhance reports with intelligent analysis
+  </Card>
+</CardGroup>

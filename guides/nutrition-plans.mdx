@@ -1,0 +1,590 @@
+---
+title: "Nutrition Plans"
+description: "Learn how to create, manage, and optimize personalized nutrition plans for your patients"
+---
+
+## Overview
+
+SANL's nutrition planning system enables healthcare providers to create evidence-based, personalized dietary interventions. The platform combines clinical data from Supabase with AI-powered recommendations from Google Gemini to deliver tailored nutrition strategies.
+
+<Note>
+  Nutrition plans automatically consider patient allergies, medications, and medical conditions to ensure safe and effective dietary recommendations.
+</Note>
+
+## Creating a Nutrition Plan
+
+Develop comprehensive nutrition plans tailored to individual patient needs:
+
+<Steps>
+  <Step title="Select Patient and Goal">
+    Begin by choosing the patient and defining nutritional objectives:
+    
+    1. Navigate to the patient profile
+    2. Click **Create Nutrition Plan**
+    3. Select the primary goal:
+       - Weight management (loss, gain, or maintenance)
+       - Blood sugar control
+       - Cardiovascular health
+       - Sports nutrition
+       - Disease-specific dietary management
+       - General wellness
+    
+    <Tip>
+      You can set multiple goals, but designate one as primary to focus the AI recommendations.
+    </Tip>
+  </Step>
+  
+  <Step title="Review Patient Context">
+    The system automatically displays relevant patient information:
+    
+    - Current measurements (weight, BMI, blood glucose, etc.)
+    - Active medical conditions and medications
+    - Known food allergies and intolerances
+    - Previous nutrition plans and outcomes
+    - Dietary preferences and restrictions
+    
+    Review this information to inform your plan decisions.
+  </Step>
+  
+  <Step title="Set Nutritional Parameters">
+    Define the core nutritional framework:
+    
+    **Daily Caloric Target**
+    - The system suggests a target based on BMR and activity level
+    - Adjust for specific weight goals (deficit or surplus)
+    - Factor in metabolic conditions
+    
+    **Macronutrient Distribution**
+    - Protein: Set percentage or grams per kg body weight
+    - Carbohydrates: Adjust based on metabolic health
+    - Fats: Balance for satiety and essential fatty acids
+    
+    **Micronutrient Focus**
+    - Highlight specific vitamins or minerals to emphasize
+    - Address deficiencies identified in lab work
+    
+    <Warning>
+      Always cross-reference macronutrient recommendations with patient medications. For example, patients on warfarin require consistent vitamin K intake.
+    </Warning>
+  </Step>
+  
+  <Step title="Generate AI Recommendations">
+    Leverage Google Gemini AI for intelligent meal planning:
+    
+    1. Click **Get AI Recommendations**
+    2. The system analyzes:
+       - Patient health data and goals
+       - Cultural and personal preferences
+       - Seasonal food availability
+       - Budget considerations
+       - Cooking skill level
+    3. Review the AI-generated meal suggestions
+    4. Edit, accept, or request alternative recommendations
+    
+    The AI provides:
+    - Complete meal plans with recipes
+    - Portion sizes and preparation instructions
+    - Nutritional breakdown per meal and daily totals
+    - Shopping lists organized by category
+  </Step>
+  
+  <Step title="Customize Meal Plans">
+    Refine the nutrition plan to match patient preferences:
+    
+    - Swap individual meals using the meal library
+    - Adjust portion sizes for specific items
+    - Add or remove snacks based on schedule
+    - Set meal timing recommendations
+    - Include hydration goals
+    
+    <Tip>
+      Use the **Save as Template** feature for plans you frequently prescribe to save time on future similar cases.
+    </Tip>
+  </Step>
+  
+  <Step title="Add Implementation Guidance">
+    Provide practical instructions for patients:
+    
+    - Phase-in approach for major dietary changes
+    - Meal prep strategies and batch cooking tips
+    - Restaurant and dining-out guidelines
+    - Travel and special occasion recommendations
+    - Troubleshooting common challenges
+  </Step>
+  
+  <Step title="Review and Publish">
+    Finalize the nutrition plan:
+    
+    1. Review the complete plan in preview mode
+    2. Verify all nutritional targets are met
+    3. Check for any conflicts with medical data
+    4. Add follow-up schedule and monitoring parameters
+    5. Click **Publish Plan**
+    
+    The system will:
+    - Make the plan available in the patient portal
+    - Send email notification to patient
+    - Generate a PDF version for download (using fpdf2)
+    - Schedule automatic check-in reminders
+  </Step>
+</Steps>
+
+## Managing Active Nutrition Plans
+
+### Monitoring Compliance
+
+Track how well patients follow their nutrition plans:
+
+<CardGroup cols={2}>
+  <Card title="Meal Logging" icon="utensils">
+    Patients can log meals through the patient portal. Review logged meals to assess adherence and make adjustments.
+  </Card>
+  
+  <Card title="Compliance Scores" icon="percent">
+    Automatic calculation of adherence percentage based on logged meals vs. plan recommendations.
+  </Card>
+  
+  <Card title="Progress Photos" icon="images">
+    Patients can upload progress photos for visual tracking. Compare photos over time to assess body composition changes.
+  </Card>
+  
+  <Card title="Symptom Tracking" icon="notes-medical">
+    Monitor patient-reported symptoms or side effects related to dietary changes.
+  </Card>
+</CardGroup>
+
+### Making Adjustments
+
+Adapt nutrition plans based on patient progress and feedback:
+
+<AccordionGroup>
+  <Accordion icon="sliders" title="Modify Existing Plans">
+    Update plans without creating entirely new versions:
+    
+    1. Open the active nutrition plan
+    2. Click **Edit Plan**
+    3. Make necessary adjustments:
+       - Increase or decrease calories
+       - Adjust macronutrient ratios
+       - Swap problematic foods
+       - Modify meal timing
+    4. Add a modification note explaining the changes
+    5. Save as a new version
+    
+    The system maintains version history so you can review the evolution of the plan over time.
+    
+    <Note>
+      Patients receive automatic notifications when their plan is updated with a summary of key changes.
+    </Note>
+  </Accordion>
+  
+  <Accordion icon="lightbulb" title="Use AI Optimization">
+    Let AI suggest plan improvements based on patient data:
+    
+    1. Click **Optimize Plan** from the active plan view
+    2. The AI analyzes:
+       - Recent patient measurements and progress
+       - Compliance patterns and logged meals
+       - Patient feedback and reported challenges
+       - Latest research on the patient's condition
+    3. Review AI suggestions with rationale
+    4. Accept, modify, or decline recommendations
+    
+    This feature uses Google Gemini to provide evidence-based optimization strategies.
+  </Accordion>
+  
+  <Accordion icon="rotate" title="Create Plan Variations">
+    Develop alternative versions for different scenarios:
+    
+    - **Weekday vs. Weekend**: Different plans for varying schedules
+    - **Seasonal Variations**: Adjust for food availability
+    - **Budget Tiers**: Options at different price points
+    - **Preparation Time**: Quick meals vs. elaborate cooking
+    
+    Store all variations in the plan library for easy patient access.
+  </Accordion>
+</AccordionGroup>
+
+## Meal Library and Recipes
+
+### Building Your Meal Database
+
+SANL includes a comprehensive meal library that grows with your practice:
+
+**Pre-loaded Content:**
+- 500+ nutritionally-analyzed recipes
+- Common restaurant meals with nutritional data
+- Packaged food database
+- Quick meal combinations
+
+**Adding Custom Meals:**
+
+<Steps>
+  <Step title="Create New Recipe">
+    Click **Add to Meal Library** from the main menu.
+  </Step>
+  
+  <Step title="Enter Recipe Details">
+    Provide:
+    - Recipe name and description
+    - Ingredient list with quantities
+    - Preparation instructions
+    - Cooking time and difficulty
+    - Serving size
+  </Step>
+  
+  <Step title="Calculate Nutrition">
+    The system automatically:
+    - Calculates total nutritional content
+    - Breaks down macronutrients
+    - Identifies key micronutrients
+    - Flags common allergens
+  </Step>
+  
+  <Step title="Tag and Categorize">
+    Add tags for easy searching:
+    - Dietary patterns (keto, vegetarian, Mediterranean, etc.)
+    - Health conditions (diabetic-friendly, heart-healthy, etc.)
+    - Meal type (breakfast, snack, main dish, etc.)
+    - Cuisine type
+    - Preparation method
+  </Step>
+</Steps>
+
+### Recipe Recommendations
+
+The AI system can suggest recipes based on:
+
+- Nutritional requirements of active plans
+- Patient preferences and past compliance
+- Ingredients on hand or in season
+- Preparation time available
+- Dietary restrictions and allergies
+
+<Tip>
+  Share popular recipes with your entire practice team to build a collaborative meal database.
+</Tip>
+
+## Specialized Nutrition Plans
+
+### Condition-Specific Planning
+
+SANL supports specialized nutrition strategies for various conditions:
+
+<AccordionGroup>
+  <Accordion icon="heart-pulse" title="Cardiovascular Health">
+    **Focus Areas:**
+    - Sodium restriction (customizable limits)
+    - Heart-healthy fats (omega-3 emphasis)
+    - Fiber optimization for cholesterol management
+    - DASH diet guidelines integration
+    
+    **Automatic Considerations:**
+    - Medication interactions (statins, blood thinners)
+    - Blood pressure monitoring integration
+    - Cholesterol level tracking
+  </Accordion>
+  
+  <Accordion icon="droplet" title="Diabetes Management">
+    **Focus Areas:**
+    - Carbohydrate counting and distribution
+    - Glycemic index/load considerations
+    - Consistent meal timing
+    - Portion control strategies
+    
+    **AI-Enhanced Features:**
+    - Blood glucose trend correlation with meals
+    - Insulin timing recommendations
+    - Hypoglycemia prevention strategies
+    - HbA1c goal tracking
+  </Accordion>
+  
+  <Accordion icon="weight-scale" title="Weight Management">
+    **Focus Areas:**
+    - Caloric deficit/surplus calculation
+    - Satiety optimization
+    - Metabolic adaptation monitoring
+    - Behavioral modification strategies
+    
+    **Progress Tracking:**
+    - Weekly weigh-in trends
+    - Body composition changes
+    - Metabolic rate adjustments
+    - Plateau management protocols
+  </Accordion>
+  
+  <Accordion icon="person-running" title="Sports Nutrition">
+    **Focus Areas:**
+    - Performance fueling strategies
+    - Recovery nutrition timing
+    - Hydration protocols
+    - Supplement integration
+    
+    **Training Integration:**
+    - Pre-workout meal timing
+    - Intra-workout nutrition
+    - Post-workout recovery windows
+    - Periodization with training cycles
+  </Accordion>
+</AccordionGroup>
+
+## Patient Education and Resources
+
+### Generating Educational Materials
+
+Create customized patient education content:
+
+<Steps>
+  <Step title="Select Education Topics">
+    Choose relevant topics from the library or create custom content:
+    
+    - Understanding macronutrients
+    - Reading nutrition labels
+    - Meal preparation basics
+    - Dining out strategies
+    - Grocery shopping guides
+  </Step>
+  
+  <Step title="Personalize Content">
+    The AI system adapts educational materials:
+    
+    - Adjusts reading level to patient health literacy
+    - Incorporates patient-specific examples
+    - Highlights relevant information for their condition
+    - Translates to preferred language
+  </Step>
+  
+  <Step title="Generate PDF Resources">
+    Create professional handouts:
+    
+    1. Click **Generate Patient Handout**
+    2. Select content modules to include
+    3. Review and customize the layout
+    4. Generate PDF using the built-in fpdf2 system
+    5. Email directly to patient or print for office distribution
+  </Step>
+</Steps>
+
+### Shopping Lists and Meal Prep
+
+Help patients implement their nutrition plans:
+
+**Automatic Shopping Lists:**
+- Generated from active meal plans
+- Organized by grocery store section
+- Quantity calculations based on serving sizes
+- Budget estimates included
+- Substitution suggestions for unavailable items
+
+**Meal Prep Guides:**
+- Batch cooking instructions
+- Storage and reheating guidelines
+- Time-saving strategies
+- Kitchen equipment recommendations
+
+<CardGroup cols={2}>
+  <Card title="Weekly Prep Schedule" icon="calendar-week">
+    Provide patients with a day-by-day meal prep schedule to make nutrition plan implementation manageable.
+  </Card>
+  
+  <Card title="Video Tutorials" icon="video">
+    Link to cooking demonstration videos for complex recipes or techniques.
+  </Card>
+</CardGroup>
+
+## Collaboration and Sharing
+
+### Multi-disciplinary Care
+
+Coordinate nutrition plans with other healthcare providers:
+
+- **Share Plans**: Send read-only or editable access to other providers
+- **Integrated Notes**: See notes from physicians, physical therapists, or mental health providers
+- **Care Team Messaging**: Discuss patient cases with the care team
+- **Referral Management**: Track referrals and receive updates
+
+<Warning>
+  Ensure all shared access complies with patient consent and HIPAA regulations. The system logs all sharing activities for compliance auditing.
+</Warning>
+
+### Plan Templates and Protocols
+
+Standardize care across your practice:
+
+<AccordionGroup>
+  <Accordion icon="file-medical" title="Clinical Protocols">
+    Create evidence-based protocols for common conditions:
+    
+    - Pre-diabetes intervention protocol
+    - Post-surgical nutrition support
+    - Pregnancy nutrition guidelines
+    - Pediatric growth support
+    
+    Templates ensure consistency while allowing individualization.
+  </Accordion>
+  
+  <Accordion icon="users" title="Team Library">
+    Share successful plans across your practice:
+    
+    - Add plans to the team library
+    - Rate and review plan effectiveness
+    - Track patient outcomes by plan type
+    - Continuous quality improvement
+  </Accordion>
+</AccordionGroup>
+
+## Plan Analytics and Outcomes
+
+### Tracking Success Metrics
+
+Measure the effectiveness of nutrition interventions:
+
+**Key Performance Indicators:**
+
+- **Compliance Rate**: Average adherence to meal plans
+- **Goal Achievement**: Percentage reaching target outcomes
+- **Time to Goal**: Average duration to achieve objectives
+- **Patient Satisfaction**: Feedback and ratings
+- **Health Improvements**: Changes in biomarkers and measurements
+
+### Data-Driven Optimization
+
+Use aggregate data to improve your practice:
+
+<CardGroup cols={2}>
+  <Card title="Plan Comparison" icon="code-compare">
+    Compare outcomes across different plan approaches to identify most effective strategies for specific conditions.
+  </Card>
+  
+  <Card title="Predictive Analytics" icon="crystal-ball">
+    AI analyzes historical data to predict which plan characteristics lead to better patient outcomes.
+  </Card>
+  
+  <Card title="Compliance Factors" icon="magnifying-glass-chart">
+    Identify factors that correlate with higher or lower plan adherence to optimize future recommendations.
+  </Card>
+  
+  <Card title="Outcome Reporting" icon="file-chart-column">
+    Generate reports for quality improvement, research, or presentation purposes.
+  </Card>
+</CardGroup>
+
+## Export and Documentation
+
+### Generating Plan Reports
+
+Create comprehensive documentation of nutrition plans:
+
+1. Select the nutrition plan to export
+2. Choose report type:
+   - **Patient Version**: Simplified, patient-friendly format
+   - **Clinical Version**: Detailed with rationale and references
+   - **Insurance Version**: Formatted for reimbursement documentation
+3. Customize included sections
+4. Generate PDF using fpdf2
+5. Save to patient record or download
+
+<Tip>
+  Schedule automatic monthly progress reports to be generated and sent to patients to keep them engaged and motivated.
+</Tip>
+
+### Integration with Electronic Health Records
+
+Export nutrition plans for integration with broader EHR systems:
+
+- **Standard Formats**: HL7, FHIR-compliant exports
+- **Automated Syncing**: Configure automatic updates to connected EHR systems
+- **Bidirectional Data**: Import relevant medical data to inform nutrition planning
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Start Simple" icon="seedling">
+    Begin with achievable changes. Gradually increase complexity as patients build confidence and skills.
+  </Card>
+  
+  <Card title="Personalize Everything" icon="user-gear">
+    Use AI recommendations as a starting point, but always customize based on patient preferences and lifestyle.
+  </Card>
+  
+  <Card title="Set Realistic Goals" icon="target">
+    Aim for 0.5-1% body weight loss per week or gradual improvements in biomarkers rather than dramatic changes.
+  </Card>
+  
+  <Card title="Regular Check-ins" icon="calendar-check">
+    Schedule frequent touchpoints initially (weekly), then space out as patients demonstrate mastery.
+  </Card>
+  
+  <Card title="Flexible Framework" icon="arrows-split-up-and-left">
+    Build plans with built-in flexibility to accommodate real-life variations without derailing progress.
+  </Card>
+  
+  <Card title="Celebrate Wins" icon="trophy">
+    Acknowledge both scale and non-scale victories to maintain motivation throughout the journey.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion icon="robot" title="AI recommendations seem inappropriate">
+    **Possible causes:**
+    
+    - Incomplete or inaccurate patient data
+    - Conflicting goals or parameters
+    - Unusual dietary restrictions combination
+    
+    **Solutions:**
+    
+    1. Review patient profile for data accuracy
+    2. Clarify primary vs. secondary goals
+    3. Add context notes to guide AI reasoning
+    4. Request alternative recommendations
+    5. Manually create plan if AI continues to miss the mark
+  </Accordion>
+  
+  <Accordion icon="ban" title="Patient reports plan is too restrictive">
+    **Assessment:**
+    
+    - Review compliance data to identify patterns
+    - Schedule consultation to discuss barriers
+    - Identify which specific recommendations are problematic
+    
+    **Adjustments:**
+    
+    - Increase caloric allowance if too low
+    - Add more variety in meal options
+    - Build in planned flexibility (80/20 approach)
+    - Adjust meal timing to fit lifestyle better
+    - Phase in changes more gradually
+  </Accordion>
+  
+  <Accordion icon="chart-line-down" title="Patient not seeing expected results">
+    **Investigation steps:**
+    
+    1. Verify actual compliance vs. reported compliance
+    2. Check for medication changes affecting metabolism
+    3. Review accuracy of food logging
+    4. Assess for medical conditions affecting progress
+    5. Calculate actual vs. theoretical energy expenditure
+    
+    **Potential adjustments:**
+    
+    - Recalculate nutritional targets based on actual data
+    - Add metabolic testing if available
+    - Adjust expectations based on individual metabolic rate
+    - Consider referral to physician if medical issue suspected
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Data Analysis" icon="chart-mixed" href="/guides/data-analysis">
+    Learn how to analyze patient data and generate AI-powered insights to optimize nutrition plans.
+  </Card>
+  
+  <Card title="Patient Management" icon="users-medical" href="/guides/patient-management">
+    Review how to manage patient records and track health data effectively.
+  </Card>
+</CardGroup>

@@ -1,0 +1,777 @@
+---
+title: "Data Analysis"
+description: "Master data analysis, AI-powered insights, and trend interpretation to optimize patient outcomes in SANL"
+---
+
+## Overview
+
+SANL's data analysis capabilities combine real-time data from Supabase with advanced AI insights from Google Gemini to help healthcare providers make evidence-based decisions. The platform transforms raw patient data into actionable intelligence for nutritional interventions.
+
+<Note>
+  All analytics are updated in real-time as new patient data is entered, ensuring you always have the most current insights available.
+</Note>
+
+## Understanding the Analytics Dashboard
+
+The main analytics interface provides multiple views of patient data:
+
+<CardGroup cols={2}>
+  <Card title="Patient Overview" icon="user-chart">
+    Individual patient metrics, trends, and progress toward goals with visual indicators for quick assessment.
+  </Card>
+  
+  <Card title="Population Health" icon="users">
+    Aggregate data across your patient panel showing patterns, risk stratification, and practice-wide outcomes.
+  </Card>
+  
+  <Card title="Intervention Analysis" icon="flask">
+    Compare effectiveness of different nutrition plans and identify which strategies work best for specific conditions.
+  </Card>
+  
+  <Card title="Compliance Insights" icon="clipboard-check">
+    Analyze adherence patterns and identify factors that predict success or barriers to compliance.
+  </Card>
+</CardGroup>
+
+## Analyzing Individual Patient Data
+
+### Accessing Patient Analytics
+
+Navigate to comprehensive patient data analysis:
+
+<Steps>
+  <Step title="Open Patient Profile">
+    Search for and select the patient from your dashboard.
+  </Step>
+  
+  <Step title="Navigate to Analytics Tab">
+    Click the **Analytics** tab to access the patient's data visualization suite.
+  </Step>
+  
+  <Step title="Select Analysis Type">
+    Choose from available analysis views:
+    
+    - **Timeline**: Chronological view of all measurements and interventions
+    - **Trends**: Statistical analysis of specific metrics over time
+    - **Correlations**: Relationship analysis between different health metrics
+    - **Predictions**: AI-powered forecasting of future outcomes
+    - **Comparisons**: Benchmarking against clinical guidelines or population norms
+  </Step>
+  
+  <Step title="Customize Date Range">
+    Set the time period for analysis:
+    
+    - Last 7 days (recent changes)
+    - Last 30 days (monthly progress)
+    - Last 90 days (quarterly trends)
+    - Last year (annual review)
+    - Since plan start (intervention effectiveness)
+    - Custom date range
+  </Step>
+</Steps>
+
+### Key Metrics Visualization
+
+SANL provides interactive charts for critical health indicators:
+
+<AccordionGroup>
+  <Accordion icon="weight-scale" title="Body Composition Trends">
+    **Available Visualizations:**
+    
+    - Weight trajectory with trend line and prediction
+    - BMI progression with clinical range indicators
+    - Body fat percentage (if measured)
+    - Waist circumference tracking
+    
+    **Analysis Features:**
+    
+    - Rate of change calculation (per week/month)
+    - Comparison to target rate
+    - Plateau detection algorithms
+    - Statistical significance testing
+    
+    <Tip>
+      Toggle the "Show Goal" overlay to visualize how actual progress compares to the planned trajectory.
+    </Tip>
+  </Accordion>
+  
+  <Accordion icon="heart-pulse" title="Cardiovascular Health Metrics">
+    **Tracked Parameters:**
+    
+    - Blood pressure trends (systolic and diastolic)
+    - Resting heart rate
+    - Cholesterol levels (total, LDL, HDL, triglycerides)
+    - Cardiovascular risk scores
+    
+    **AI-Enhanced Insights:**
+    
+    Google Gemini AI analyzes cardiovascular data to:
+    - Identify concerning patterns before clinical thresholds
+    - Suggest dietary modifications based on trends
+    - Correlate dietary adherence with metric improvements
+    - Generate physician communication summaries
+  </Accordion>
+  
+  <Accordion icon="droplet" title="Metabolic Health Analysis">
+    **Key Measurements:**
+    
+    - Fasting blood glucose trends
+    - HbA1c progression (quarterly)
+    - Postprandial glucose patterns
+    - Insulin levels (if measured)
+    - Estimated insulin sensitivity
+    
+    **Advanced Features:**
+    
+    - Time-in-range analysis for glucose
+    - Glycemic variability calculation
+    - Correlation with specific meals or foods
+    - Hypoglycemia event tracking
+    - Medication adjustment recommendations
+    
+    <Warning>
+      Always review medication lists before implementing AI suggestions for metabolic management. Coordinate with prescribing physician for medication-dependent conditions.
+    </Warning>
+  </Accordion>
+  
+  <Accordion icon="flask-vial" title="Laboratory Results Tracking">
+    **Comprehensive Lab Analysis:**
+    
+    - Lipid panels over time
+    - Kidney function markers (creatinine, eGFR, BUN)
+    - Liver function tests
+    - Vitamin and mineral levels
+    - Inflammatory markers (CRP, homocysteine)
+    - Thyroid function
+    
+    **Integration Features:**
+    
+    - Import lab results directly from common formats
+    - Automatic flagging of out-of-range values
+    - Historical comparison with previous results
+    - Nutritional intervention correlation
+  </Accordion>
+</AccordionGroup>
+
+## AI-Powered Insights
+
+### Generating Intelligent Recommendations
+
+Leverage Google Gemini AI for advanced patient analysis:
+
+<Steps>
+  <Step title="Request AI Analysis">
+    From the patient analytics view, click **Generate AI Insights**.
+  </Step>
+  
+  <Step title="Select Analysis Focus">
+    Choose what you want the AI to analyze:
+    
+    - Overall progress assessment
+    - Specific metric deep-dive
+    - Intervention effectiveness
+    - Compliance pattern analysis
+    - Risk factor identification
+    - Optimization recommendations
+  </Step>
+  
+  <Step title="Review AI Report">
+    The AI generates a comprehensive analysis including:
+    
+    **Summary Section:**
+    - Key findings in plain language
+    - Most significant changes or patterns
+    - Areas of concern or celebration
+    
+    **Detailed Analysis:**
+    - Statistical trends with significance testing
+    - Correlation analysis between metrics
+    - Comparison to expected outcomes
+    - Evidence-based interpretation
+    
+    **Actionable Recommendations:**
+    - Specific dietary modifications
+    - Lifestyle intervention suggestions
+    - Follow-up testing or monitoring recommendations
+    - Patient education topics to address
+  </Step>
+  
+  <Step title="Implement or Refine">
+    Take action on AI insights:
+    
+    - Accept recommendations directly into nutrition plan
+    - Request alternative approaches
+    - Ask follow-up questions to the AI
+    - Document clinical reasoning for any deviations
+    
+    <Note>
+      All AI interactions are logged and saved to the patient record for future reference and continuity of care.
+    </Note>
+  </Step>
+</Steps>
+
+### Understanding AI Confidence Scores
+
+The AI system provides confidence ratings for its recommendations:
+
+- **High Confidence (85-100%)**: Strong evidence support, clear data patterns, well-established interventions
+- **Moderate Confidence (60-84%)**: Good evidence but some uncertainty, multiple valid approaches, or individual variation expected
+- **Low Confidence (below 60%)**: Limited data, unusual patient presentation, or conflicting evidence
+
+<Tip>
+  Use your clinical judgment alongside AI recommendations. High confidence scores don't replace professional decision-making, especially for complex cases.
+</Tip>
+
+## Interpreting Data Trends
+
+### Statistical Analysis Tools
+
+SANL provides built-in statistical analysis for evidence-based decision making:
+
+<CardGroup cols={2}>
+  <Card title="Trend Lines" icon="chart-line">
+    Linear and polynomial regression lines show overall direction of change with R² values indicating fit quality.
+  </Card>
+  
+  <Card title="Moving Averages" icon="water">
+    Smooth out daily fluctuations to see underlying trends. Adjustable window (7, 14, 30 days).
+  </Card>
+  
+  <Card title="Standard Deviation" icon="chart-scatter">
+    Visualize data variability and identify outliers. Shaded bands show 1 and 2 SD ranges.
+  </Card>
+  
+  <Card title="Rate of Change" icon="gauge">
+    Calculate velocity of progress. Alerts when rate deviates from expected or target values.
+  </Card>
+</CardGroup>
+
+### Pattern Recognition
+
+Identify clinically significant patterns in patient data:
+
+<AccordionGroup>
+  <Accordion icon="chart-line-up" title="Positive Trends">
+    **Indicators of Success:**
+    
+    - Consistent movement toward goals
+    - Stable or improving biomarkers
+    - High compliance correlation with improvements
+    - Reduced variability in key metrics
+    - Patient-reported satisfaction increases
+    
+    **Actions:**
+    
+    - Acknowledge and celebrate progress with patient
+    - Continue current intervention strategy
+    - Consider gradual reduction in monitoring frequency
+    - Document successful approaches for similar future cases
+  </Accordion>
+  
+  <Accordion icon="minus" title="Plateaus">
+    **Plateau Characteristics:**
+    
+    - Flat trend despite continued intervention
+    - Sustained over 2-4 weeks
+    - No obvious compliance issues
+    - Patient frustration may increase
+    
+    **AI-Suggested Interventions:**
+    
+    1. Recalculate energy expenditure based on new body weight
+    2. Adjust macronutrient distribution
+    3. Implement diet breaks or refeeds (weight loss cases)
+    4. Increase physical activity recommendations
+    5. Screen for metabolic adaptation
+    6. Assess for unidentified compliance barriers
+    
+    <Tip>
+      Plateaus are normal physiological responses. Educate patients proactively about expecting them to reduce frustration when they occur.
+    </Tip>
+  </Accordion>
+  
+  <Accordion icon="chart-line-down" title="Adverse Trends">
+    **Warning Signs:**
+    
+    - Movement away from goals
+    - Worsening biomarkers
+    - Declining compliance
+    - Increasing metric variability
+    - Patient-reported difficulties
+    
+    **Investigation Protocol:**
+    
+    1. **Review compliance data**: Is the plan being followed?
+    2. **Check for life changes**: New stressors, schedule changes, etc.
+    3. **Medication review**: Any changes affecting metabolism or appetite?
+    4. **Plan suitability**: Is it too restrictive or incompatible with lifestyle?
+    5. **Medical factors**: Undiagnosed conditions or disease progression?
+    
+    **Response Actions:**
+    
+    - Schedule urgent follow-up consultation
+    - Simplify plan if overwhelming
+    - Address identified barriers
+    - Consider medical referral if concerning health changes
+    - Modify goals if initially unrealistic
+  </Accordion>
+  
+  <Accordion icon="wave-square" title="Cyclical Patterns">
+    **Common Cycles:**
+    
+    - Weekly patterns (weekend vs. weekday behaviors)
+    - Monthly patterns (hormonal influences)
+    - Seasonal variations (holiday periods, weather changes)
+    - Stress-related cycles (work schedules, academic calendars)
+    
+    **Optimization Strategies:**
+    
+    - Create pattern-specific plan variations
+    - Anticipate and plan for challenging periods
+    - Set realistic expectations during difficult cycles
+    - Focus maintenance during predictable low-compliance periods
+  </Accordion>
+</AccordionGroup>
+
+## Correlation Analysis
+
+### Multi-Variable Relationships
+
+Explore how different factors influence each other:
+
+<Steps>
+  <Step title="Select Variables">
+    Choose two or more metrics to analyze:
+    
+    - Independent variable (e.g., dietary compliance)
+    - Dependent variable (e.g., weight change)
+    - Optional: Additional factors (sleep, stress, activity)
+  </Step>
+  
+  <Step title="Generate Correlation Plot">
+    The system creates:
+    
+    - Scatter plots showing relationship
+    - Correlation coefficient (r value)
+    - P-value for statistical significance
+    - Regression line if appropriate
+  </Step>
+  
+  <Step title="Interpret Results">
+    **Correlation Strength:**
+    
+    - Strong (|r| > 0.7): Clear relationship
+    - Moderate (|r| = 0.4-0.7): Notable association
+    - Weak (|r| < 0.4): Minimal relationship
+    
+    <Warning>
+      Remember: Correlation does not imply causation. Use clinical judgment to interpret relationships.
+    </Warning>
+  </Step>
+  
+  <Step title="Apply Insights">
+    Use correlation findings to:
+    
+    - Identify most impactful interventions
+    - Personalize which metrics to emphasize
+    - Predict outcomes based on compliance patterns
+    - Adjust monitoring frequency based on key drivers
+  </Step>
+</Steps>
+
+### Meal-Impact Analysis
+
+Analyze how specific foods or meals affect patient metrics:
+
+- **Blood Glucose Response**: See which meals cause spikes or maintain stability
+- **Satiety Correlation**: Identify meals that best control hunger
+- **Energy Levels**: Track reported energy after different meal compositions
+- **Digestive Symptoms**: Pinpoint problematic foods or combinations
+
+<Tip>
+  Use the meal-impact analysis to create highly personalized "best foods" and "limit foods" lists for each patient based on their individual responses.
+</Tip>
+
+## Population Health Analytics
+
+### Practice-Wide Dashboards
+
+Analyze aggregate data across your patient population:
+
+<CardGroup cols={2}>
+  <Card title="Patient Distribution" icon="chart-pie">
+    Visualize patient demographics, conditions, and risk stratification across your practice.
+  </Card>
+  
+  <Card title="Outcome Metrics" icon="ranking-star">
+    Track aggregate success rates, average improvements, and time-to-goal across different patient groups.
+  </Card>
+  
+  <Card title="Intervention Effectiveness" icon="vial">
+    Compare outcomes between different nutrition plan approaches to identify best practices.
+  </Card>
+  
+  <Card title="Resource Utilization" icon="clock">
+    Analyze appointment frequency, plan complexity, and support needs by patient type.
+  </Card>
+</CardGroup>
+
+### Cohort Analysis
+
+Compare outcomes across patient subgroups:
+
+<AccordionGroup>
+  <Accordion icon="layer-group" title="Create Custom Cohorts">
+    Group patients by shared characteristics:
+    
+    - Primary diagnosis or health goal
+    - Age ranges
+    - BMI categories
+    - Comorbidity profiles
+    - Nutrition plan types
+    - Compliance levels
+    
+    Save frequently used cohort definitions for quick access.
+  </Accordion>
+  
+  <Accordion icon="code-compare" title="Compare Cohort Outcomes">
+    The system generates comparison reports showing:
+    
+    - Average improvement by cohort
+    - Goal achievement rates
+    - Time to reach milestones
+    - Dropout or non-compliance rates
+    - Cost-effectiveness (if tracked)
+    
+    Use these insights to:
+    - Refine protocols for specific patient types
+    - Set realistic expectations
+    - Identify at-risk populations needing extra support
+    - Justify insurance coverage or program value
+  </Accordion>
+</AccordionGroup>
+
+### Predictive Analytics
+
+Leverage AI to forecast outcomes and identify risks:
+
+**Risk Stratification:**
+- High-risk patients for non-compliance
+- Likelihood of achieving goals by target date
+- Probability of complications or adverse events
+- Patients likely to need plan modifications
+
+**Resource Allocation:**
+- Predicted appointment needs
+- Patients who would benefit from group programs
+- Candidates for remote monitoring vs. frequent visits
+
+<Note>
+  Predictive models improve over time as they learn from your practice patterns and outcomes. Initial predictions may be less accurate.
+</Note>
+
+## Generating Reports
+
+### Patient Progress Reports
+
+Create comprehensive documentation of patient journey:
+
+<Steps>
+  <Step title="Select Report Type">
+    Choose from available templates:
+    
+    - Weekly progress summary
+    - Monthly comprehensive review
+    - Quarterly outcome report
+    - Annual health assessment
+    - Custom date range report
+  </Step>
+  
+  <Step title="Customize Report Content">
+    Select sections to include:
+    
+    - Executive summary
+    - Measurement trends with charts
+    - Compliance analysis
+    - Nutrition plan adherence
+    - AI-generated insights
+    - Recommendations for next phase
+    - Goals for upcoming period
+  </Step>
+  
+  <Step title="Choose Report Format">
+    Generate reports optimized for different audiences:
+    
+    **Patient Version:**
+    - Clear, non-technical language
+    - Visual emphasis on progress and wins
+    - Actionable next steps
+    - Encouraging tone
+    
+    **Clinical Version:**
+    - Detailed metrics and statistics
+    - Evidence-based rationale
+    - Differential diagnoses or considerations
+    - Professional medical terminology
+    
+    **Insurance Version:**
+    - ICD-10 codes and medical necessity
+    - Standardized outcome measures
+    - Cost-effectiveness data
+    - Compliance with coverage criteria
+  </Step>
+  
+  <Step title="Generate and Distribute">
+    Create the report using the fpdf2 PDF generation system:
+    
+    1. Review the generated PDF preview
+    2. Make any final edits or annotations
+    3. Save to patient record
+    4. Email to patient, other providers, or payers as appropriate
+    5. Print for physical chart if needed
+    
+    <Tip>
+      Schedule automatic report generation for active patients to ensure regular documentation without manual effort.
+    </Tip>
+  </Step>
+</Steps>
+
+### Quality Improvement Reports
+
+Generate practice-level reports for continuous improvement:
+
+- **Outcome dashboards**: Track practice-wide success metrics over time
+- **Benchmarking**: Compare your outcomes to national or regional standards
+- **Protocol effectiveness**: Evaluate standardized approaches
+- **Patient satisfaction**: Aggregate feedback and ratings
+- **Financial performance**: ROI on different program types (if applicable)
+
+## Data Export and Integration
+
+### Exporting Patient Data
+
+Extract data for external analysis or record-keeping:
+
+<AccordionGroup>
+  <Accordion icon="file-csv" title="CSV Export">
+    Export raw data in CSV format for:
+    
+    - Importing into statistical software (R, SPSS, etc.)
+    - Spreadsheet analysis in Excel or Google Sheets
+    - Integration with other health IT systems
+    - Research databases
+    
+    **Configurable Options:**
+    - Select specific metrics to export
+    - Choose date range
+    - Include or exclude identifying information
+    - Aggregate vs. granular data
+  </Accordion>
+  
+  <Accordion icon="code" title="API Access">
+    Programmatic data access via FastAPI backend:
+    
+    - RESTful API endpoints for all major data types
+    - Authentication with secure API keys
+    - Rate limiting and usage monitoring
+    - Webhook support for real-time updates
+    
+    Use cases:
+    - Custom dashboard development
+    - Integration with practice management systems
+    - Research data pipelines
+    - Third-party analytics tools
+  </Accordion>
+  
+  <Accordion icon="file-export" title="Standardized Health Data Formats">
+    Export in interoperable healthcare formats:
+    
+    - **HL7**: For integration with hospital systems
+    - **FHIR**: Modern healthcare interoperability standard
+    - **C-CDA**: Continuity of care documents
+    
+    Ensures seamless data exchange across healthcare ecosystem.
+  </Accordion>
+</AccordionGroup>
+
+## Advanced Analytics Features
+
+### Machine Learning Insights
+
+Google Gemini AI provides advanced pattern recognition:
+
+<CardGroup cols={2}>
+  <Card title="Outcome Prediction" icon="crystal-ball">
+    Predict patient outcomes at plan initiation based on historical data from similar patients.
+  </Card>
+  
+  <Card title="Anomaly Detection" icon="triangle-exclamation">
+    Automatically identify unusual patterns that may indicate health issues or data entry errors.
+  </Card>
+  
+  <Card title="Optimal Timing" icon="clock">
+    Suggest ideal timing for interventions, appointments, or plan modifications based on patient patterns.
+  </Card>
+  
+  <Card title="Personalization Engine" icon="wand-magic-sparkles">
+    Generate individualized recommendations that learn from each patient's unique responses.
+  </Card>
+</CardGroup>
+
+### Natural Language Queries
+
+Ask questions about your data in plain English:
+
+**Example Queries:**
+- "Which patients have lost more than 5% body weight in the last month?"
+- "Show me all diabetic patients with HbA1c above 7%"
+- "What's the average compliance rate for my low-carb diet plans?"
+- "Find patients who haven't logged meals in over a week"
+- "Compare weight loss outcomes between morning and evening exercise timing"
+
+The AI interprets your question, queries the Supabase database, and presents results with relevant visualizations.
+
+<Tip>
+  Use natural language queries for ad-hoc analysis without needing to navigate through multiple menus or learn complex filter syntax.
+</Tip>
+
+## Data Quality and Validation
+
+### Ensuring Accurate Analysis
+
+Maintain data integrity for reliable insights:
+
+<AccordionGroup>
+  <Accordion icon="circle-check" title="Automatic Validation">
+    The system flags potentially erroneous data:
+    
+    - Biologically implausible values (e.g., 500 lb weight loss in a week)
+    - Inconsistent units or conversions
+    - Duplicate entries
+    - Missing timestamps
+    - Outliers beyond expected ranges
+    
+    Review flagged items and correct or confirm as appropriate.
+  </Accordion>
+  
+  <Accordion icon="user-check" title="Manual Quality Checks">
+    Regular data audits to ensure accuracy:
+    
+    1. Review recently entered data for obvious errors
+    2. Verify measurement techniques are consistent
+    3. Confirm patient-entered data makes sense
+    4. Check for systematic entry errors (e.g., always entering kg as lbs)
+    5. Validate imported data from external sources
+  </Accordion>
+  
+  <Accordion icon="clock-rotate-left" title="Audit Trail">
+    Complete logging of data changes:
+    
+    - Who entered or modified each data point
+    - When changes were made
+    - Original values before modification
+    - Reason for change (if documented)
+    
+    Essential for both clinical quality and regulatory compliance.
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices for Data Analysis
+
+<CardGroup cols={2}>
+  <Card title="Regular Review Cadence" icon="calendar-days">
+    Establish consistent schedule for reviewing patient analytics to catch issues early and celebrate progress.
+  </Card>
+  
+  <Card title="Multi-Metric Perspective" icon="eyes">
+    Never rely on a single metric. Look at multiple data points to get a complete picture of patient health.
+  </Card>
+  
+  <Card title="Context Matters" icon="puzzle-piece">
+    Consider external factors (holidays, illness, life stress) when interpreting data trends.
+  </Card>
+  
+  <Card title="Patient Collaboration" icon="handshake">
+    Share data visualizations with patients to increase engagement and understanding of their progress.
+  </Card>
+  
+  <Card title="Document Insights" icon="pen-to-square">
+    Record key analytical findings in clinical notes for continuity of care and legal protection.
+  </Card>
+  
+  <Card title="Continuous Learning" icon="graduation-cap">
+    Use aggregate practice data to improve your skills and protocols over time.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion icon="chart-simple" title="Charts not displaying or loading slowly">
+    **Common causes:**
+    
+    - Large date range with many data points
+    - Browser cache issues
+    - Slow internet connection
+    - Database query timeout
+    
+    **Solutions:**
+    
+    1. Narrow the date range to reduce data volume
+    2. Clear browser cache and refresh
+    3. Check network connection
+    4. Use aggregate views instead of granular data
+    5. Contact support if database performance is slow
+  </Accordion>
+  
+  <Accordion icon="triangle-exclamation" title="AI insights seem incorrect or irrelevant">
+    **Potential issues:**
+    
+    - Insufficient patient data for reliable analysis
+    - Incomplete patient profile information
+    - Data quality issues skewing AI interpretation
+    - Unusual patient case outside AI training scope
+    
+    **Actions:**
+    
+    1. Verify patient profile completeness
+    2. Check for data entry errors in recent measurements
+    3. Ensure adequate data history (minimum 2-4 weeks)
+    4. Provide additional context in patient notes
+    5. Request alternative AI analysis
+    6. Rely on clinical judgment if AI continues to miss mark
+  </Accordion>
+  
+  <Accordion icon="file-slash" title="Report generation fails">
+    **Troubleshooting steps:**
+    
+    1. Check that patient has data in selected date range
+    2. Verify all required data fields are populated
+    3. Try generating with fewer report sections
+    4. Check browser console for error messages
+    5. Attempt with different report template
+    6. Contact support with error details if persists
+    
+    PDF generation (fpdf2) occasionally fails with very large datasets or special characters in notes.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Patient Management" icon="users-medical" href="/guides/patient-management">
+    Learn how to effectively manage patient records and track health data.
+  </Card>
+  
+  <Card title="Nutrition Plans" icon="apple-whole" href="/guides/nutrition-plans">
+    Discover how to create and optimize personalized nutrition interventions.
+  </Card>
+  
+  <Card title="API Reference" icon="code" href="/api/overview">
+    Explore programmatic access to patient data and analytics for custom integrations.
+  </Card>
+  
+  <Card title="AI Integration" icon="brain" href="/setup/ai-integration">
+    Understand how Google Gemini AI powers intelligent insights and recommendations.
+  </Card>
+</CardGroup>

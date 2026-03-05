@@ -1,0 +1,264 @@
+---
+title: Environment Configuration
+description: Configure environment variables for SANL backend services
+---
+
+SANL uses environment variables to manage configuration for external services including Google Gemini AI and Supabase database.
+
+## Environment File Setup
+
+The backend requires a `.env` file in the `backend/` directory to store sensitive configuration values.
+
+<Steps>
+  <Step title="Create the .env file">
+    Copy the example environment file:
+    ```bash
+    cd backend
+    cp .env.example .env
+    ```
+  </Step>
+
+  <Step title="Configure required variables">
+    Open the `.env` file and add your actual values for each required variable.
+  </Step>
+
+  <Step title="Verify configuration">
+    Ensure all required variables are set before starting the backend server.
+  </Step>
+</Steps>
+
+## Required Environment Variables
+
+### Google Gemini AI Configuration
+
+<ParamField path="GEMINI_API_KEY" type="string" required>
+  Your Google Gemini API key for accessing Gemini 1.5 Flash AI model.
+  
+  **Reference:** Requirement RF-11 (AI Integration)
+  
+  **How to obtain:**
+  1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+  2. Sign in with your Google account
+  3. Create a new API key
+  4. Copy the key to your `.env` file
+  
+  **Example:**
+  ```bash
+  GEMINI_API_KEY=AIzaSyB1234567890abcdefghijklmnopqrstu
+  ```
+  
+  <Warning>
+    Never commit your actual API key to version control. The `.env` file should be included in `.gitignore`.
+  </Warning>
+</ParamField>
+
+### Supabase Database Configuration
+
+<ParamField path="SUPABASE_URL" type="string" required>
+  Your Supabase project URL.
+  
+  **Reference:** Requirement RNF-04 (Database Integration)
+  
+  **How to obtain:**
+  1. Go to your [Supabase Dashboard](https://app.supabase.com/)
+  2. Select your project
+  3. Navigate to Settings > API
+  4. Copy the Project URL
+  
+  **Format:**
+  ```bash
+  SUPABASE_URL=https://your-project-id.supabase.co
+  ```
+  
+  <Info>
+    The URL format is always `https://[PROJECT_ID].supabase.co`
+  </Info>
+</ParamField>
+
+<ParamField path="SUPABASE_ANON_KEY" type="string" required>
+  Your Supabase anonymous/public API key.
+  
+  **Reference:** Requirement RNF-04 (Database Integration)
+  
+  **How to obtain:**
+  1. In your Supabase Dashboard
+  2. Navigate to Settings > API
+  3. Copy the `anon` `public` key from the Project API keys section
+  
+  **Example:**
+  ```bash
+  SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+  ```
+  
+  <Note>
+    The anon key is safe to use in client-side code as it respects Row Level Security (RLS) policies.
+  </Note>
+</ParamField>
+
+## Complete .env File Example
+
+Here's what your `.env` file should look like with all required variables:
+
+```bash
+# IA - Gemini 1.5 Flash (RF-11)
+GEMINI_API_KEY=your_actual_gemini_api_key_here
+
+# Base de Datos - Supabase (RNF-04)
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_ANON_KEY=your_actual_supabase_anon_key_here
+```
+
+## Security Best Practices
+
+<Warning>
+  **Critical Security Guidelines:**
+  
+  1. **Never commit `.env` files to version control**
+  2. **Never share API keys in public channels**
+  3. **Rotate keys immediately if they are exposed**
+  4. **Use different keys for development and production**
+</Warning>
+
+### Protecting Your Environment Variables
+
+<Steps>
+  <Step title="Verify .gitignore">
+    Ensure your `.gitignore` file includes:
+    ```
+    .env
+    .env.local
+    .env*.local
+    ```
+  </Step>
+
+  <Step title="Use environment-specific files">
+    Consider using different files for different environments:
+    - `.env.development` - Development environment
+    - `.env.production` - Production environment
+    - `.env.local` - Local overrides (never committed)
+  </Step>
+
+  <Step title="Implement key rotation">
+    Regularly rotate your API keys and update them in your environment:
+    1. Generate new keys in Google AI Studio and Supabase
+    2. Update your `.env` file
+    3. Restart your backend server
+    4. Revoke old keys after verification
+  </Step>
+</Steps>
+
+### Access Control
+
+<CardGroup cols={2}>
+  <Card title="Development" icon="code">
+    Use restricted API keys with limited quotas and permissions for development environments.
+  </Card>
+  
+  <Card title="Production" icon="shield">
+    Use production keys with appropriate rate limits and monitoring in place.
+  </Card>
+  
+  <Card title="Team Access" icon="users">
+    Use secret management tools (e.g., AWS Secrets Manager, HashiCorp Vault) for team environments.
+  </Card>
+  
+  <Card title="CI/CD" icon="rocket">
+    Store secrets in your CI/CD platform's secret management system, not in repository files.
+  </Card>
+</CardGroup>
+
+## Loading Environment Variables
+
+The SANL backend uses `python-dotenv` to automatically load environment variables from the `.env` file.
+
+```python
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
+
+# Access variables
+gemini_api_key = os.getenv("GEMINI_API_KEY")
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_ANON_KEY")
+```
+
+## Validation
+
+Verify your environment configuration is correct:
+
+<Steps>
+  <Step title="Check file exists">
+    ```bash
+    ls -la backend/.env
+    ```
+  </Step>
+
+  <Step title="Verify variables are set">
+    ```bash
+    cd backend
+    source venv/bin/activate
+    python -c "from dotenv import load_dotenv; import os; load_dotenv(); print('Gemini Key:', 'SET' if os.getenv('GEMINI_API_KEY') else 'MISSING'); print('Supabase URL:', 'SET' if os.getenv('SUPABASE_URL') else 'MISSING'); print('Supabase Key:', 'SET' if os.getenv('SUPABASE_ANON_KEY') else 'MISSING')"
+    ```
+  </Step>
+
+  <Step title="Test API connections">
+    Start the backend server and verify that:
+    - Gemini AI API responds to requests
+    - Supabase database connection is established
+    - No authentication errors appear in logs
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Environment variables not loading">
+    **Symptoms:** API errors, authentication failures
+    
+    **Solutions:**
+    1. Verify `.env` file is in the `backend/` directory
+    2. Ensure no extra spaces around `=` in variable definitions
+    3. Check that `python-dotenv` is installed
+    4. Restart the backend server after changes
+  </Accordion>
+
+  <Accordion title="Invalid API key errors">
+    **Symptoms:** 401 Unauthorized or API key invalid errors
+    
+    **Solutions:**
+    1. Verify you copied the complete API key without truncation
+    2. Check for extra whitespace before/after the key
+    3. Ensure the key is still valid (not revoked)
+    4. Verify you're using the correct key type (anon key for Supabase)
+  </Accordion>
+
+  <Accordion title="Supabase connection failures">
+    **Symptoms:** Database connection errors, timeout errors
+    
+    **Solutions:**
+    1. Verify the Supabase URL is correct and includes `https://`
+    2. Check that your Supabase project is active
+    3. Ensure your IP is not blocked by Supabase
+    4. Verify network connectivity
+  </Accordion>
+
+  <Accordion title="Variables work locally but not in deployment">
+    **Symptoms:** Works in development, fails in production
+    
+    **Solutions:**
+    1. Ensure environment variables are set in your deployment platform
+    2. Check that variable names match exactly (case-sensitive)
+    3. Verify deployment platform loaded the variables
+    4. Check deployment logs for specific error messages
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+After configuring your environment variables:
+
+1. [Set up your Supabase database](/setup/database)
+2. [Configure Google Gemini AI integration](/setup/ai-integration)
+3. Start the backend server and verify connections

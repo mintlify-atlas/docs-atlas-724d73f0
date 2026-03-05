@@ -1,0 +1,249 @@
+---
+title: 'Clinical Records Management'
+description: 'Comprehensive digital clinical record system powered by Supabase for real-time patient data management'
+icon: 'folder-medical'
+---
+
+## Overview
+
+SANL's clinical records system provides a robust, cloud-based solution for managing patient nutritional health data. Built on Supabase's PostgreSQL database, it ensures secure, real-time access to clinical information for healthcare providers and patients.
+
+<Note>
+All clinical records are stored with enterprise-grade security and comply with healthcare data protection standards through Supabase's infrastructure.
+</Note>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Real-Time Sync" icon="arrows-rotate">
+    Instant updates across all devices using Supabase's real-time capabilities
+  </Card>
+  <Card title="Secure Storage" icon="lock">
+    PostgreSQL-backed storage with row-level security policies
+  </Card>
+  <Card title="Structured Data" icon="database">
+    Organized patient records with relational data integrity
+  </Card>
+  <Card title="Audit Trail" icon="clock-rotate-left">
+    Complete history of record modifications and access
+  </Card>
+</CardGroup>
+
+## Architecture
+
+The clinical records system leverages Supabase's powerful features:
+
+- **PostgreSQL Database**: Structured storage for patient demographics, medical history, and nutritional data
+- **Row-Level Security (RLS)**: Fine-grained access control ensuring patients only see their own records
+- **Real-time Subscriptions**: Live updates when records are modified by healthcare providers
+- **Authentication Integration**: Seamless user management with Supabase Auth
+
+## Configuration
+
+### Backend Setup
+
+Connect to your Supabase instance by configuring environment variables:
+
+```bash .env
+# Supabase Configuration (RNF-04)
+SUPABASE_URL=your_project_url
+SUPABASE_ANON_KEY=your_anon_key
+```
+
+### Python Integration
+
+The backend uses the official Supabase Python client:
+
+```python
+from supabase import create_client, Client
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Initialize Supabase client
+supabase: Client = create_client(
+    os.getenv("SUPABASE_URL"),
+    os.getenv("SUPABASE_ANON_KEY")
+)
+```
+
+## Usage Patterns
+
+<Tabs>
+  <Tab title="Healthcare Provider">
+    ### Creating a Clinical Record
+
+    Healthcare providers can create comprehensive patient records with nutritional assessments:
+
+    ```python
+    from fastapi import APIRouter, HTTPException
+    from pydantic import BaseModel
+    from datetime import datetime
+
+    router = APIRouter()
+
+    class ClinicalRecord(BaseModel):
+        patient_id: str
+        diagnosis: str
+        nutritional_status: str
+        dietary_restrictions: list[str]
+        anthropometric_data: dict
+        created_by: str
+
+    @router.post("/api/records")
+    async def create_record(record: ClinicalRecord):
+        try:
+            result = supabase.table("clinical_records").insert({
+                "patient_id": record.patient_id,
+                "diagnosis": record.diagnosis,
+                "nutritional_status": record.nutritional_status,
+                "dietary_restrictions": record.dietary_restrictions,
+                "anthropometric_data": record.anthropometric_data,
+                "created_by": record.created_by,
+                "created_at": datetime.utcnow().isoformat()
+            }).execute()
+            
+            return {"success": True, "record_id": result.data[0]["id"]}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    ```
+
+    ### Updating Patient Records
+
+    ```python
+    @router.patch("/api/records/{record_id}")
+    async def update_record(record_id: str, updates: dict):
+        result = supabase.table("clinical_records") \
+            .update(updates) \
+            .eq("id", record_id) \
+            .execute()
+        
+        return {"success": True, "updated": result.data}
+    ```
+  </Tab>
+
+  <Tab title="Patient">
+    ### Viewing Your Records
+
+    Patients can access their own clinical records through secure endpoints:
+
+    ```python
+    @router.get("/api/my-records")
+    async def get_patient_records(patient_id: str):
+        # RLS policies ensure patients only see their own data
+        records = supabase.table("clinical_records") \
+            .select("*") \
+            .eq("patient_id", patient_id) \
+            .order("created_at", desc=True) \
+            .execute()
+        
+        return records.data
+    ```
+
+    ### Timeline View
+
+    ```python
+    @router.get("/api/records/timeline/{patient_id}")
+    async def get_records_timeline(patient_id: str):
+        timeline = supabase.table("clinical_records") \
+            .select("id, created_at, nutritional_status, created_by") \
+            .eq("patient_id", patient_id) \
+            .order("created_at", desc=True) \
+            .execute()
+        
+        return {"timeline": timeline.data}
+    ```
+  </Tab>
+</Tabs>
+
+## Database Schema
+
+<Info>
+SANL uses a structured schema optimized for nutritional health monitoring.
+</Info>
+
+### Recommended Table Structure
+
+```sql
+CREATE TABLE clinical_records (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  patient_id UUID REFERENCES auth.users(id),
+  diagnosis TEXT,
+  nutritional_status TEXT,
+  dietary_restrictions JSONB,
+  anthropometric_data JSONB,
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE clinical_records ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Patients can view their own records
+CREATE POLICY "Patients can view own records"
+  ON clinical_records
+  FOR SELECT
+  USING (auth.uid() = patient_id);
+
+-- Policy: Healthcare providers can view and modify all records
+CREATE POLICY "Providers can manage all records"
+  ON clinical_records
+  FOR ALL
+  USING (auth.jwt() ->> 'role' = 'provider');
+```
+
+## Real-Time Updates
+
+Subscribe to record changes for live updates:
+
+```python
+from supabase import RealtimeChannel
+
+def handle_record_update(payload):
+    print(f"Record updated: {payload}")
+
+# Subscribe to changes
+channel = supabase.channel('clinical_records_changes')
+channel.on_postgres_changes(
+    event='UPDATE',
+    schema='public',
+    table='clinical_records',
+    callback=handle_record_update
+).subscribe()
+```
+
+## Best Practices
+
+<Tip>
+Always validate and sanitize patient data before storing it in the database to maintain data integrity.
+</Tip>
+
+- **Use Typed Models**: Define Pydantic models for all record operations to ensure data consistency
+- **Implement RLS**: Always enable Row-Level Security policies to protect patient privacy
+- **Audit Logging**: Track all record modifications with timestamps and user identification
+- **Data Validation**: Validate nutritional data against standard ranges before storage
+- **Encryption**: Use Supabase's built-in encryption for sensitive fields
+
+## Dependencies
+
+Required packages from `requirements.txt`:
+
+```txt
+supabase
+fastapi
+uvicorn
+python-dotenv
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Nutritional Tracking" icon="chart-line" href="/features/nutritional-tracking">
+    Learn how to track patient nutrition metrics in real-time
+  </Card>
+  <Card title="AI Insights" icon="brain" href="/features/ai-insights">
+    Generate intelligent nutritional insights from clinical records
+  </Card>
+</CardGroup>

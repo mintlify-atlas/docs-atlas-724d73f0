@@ -1,0 +1,677 @@
+---
+title: Production Best Practices
+description: Security, monitoring, and optimization guidelines for SANL in production
+---
+
+This guide covers essential best practices for running SANL safely and efficiently in production environments.
+
+## Security Considerations
+
+<Warning>
+  Security is critical for healthcare applications handling sensitive nutritional and patient data. Follow all guidelines carefully.
+</Warning>
+
+<Accordion title="Environment Variable Security">
+  ### Never Commit Secrets
+
+  The SANL backend requires sensitive credentials:
+
+  ```bash .env.example
+  # IA - Gemini 1.5 Flash (RF-11)
+  GEMINI_API_KEY=tu_llave_aqui
+
+  # Base de Datos - Supabase (RNF-04)
+  SUPABASE_URL=tu_url_aqui
+  SUPABASE_ANON_KEY=tu_llave_anon_aqui
+  ```
+
+  **Protection Measures:**
+
+  <Steps>
+    <Step title="Use .gitignore">
+      Ensure `.env` files are excluded:
+
+      ```bash .gitignore
+      # env files
+      .env*
+      !.env.example
+      ```
+    </Step>
+
+    <Step title="Use Secret Management">
+      For production, use dedicated secret management:
+
+      - **AWS Secrets Manager**
+      - **HashiCorp Vault**
+      - **Google Secret Manager**
+      - **Azure Key Vault**
+    </Step>
+
+    <Step title="Rotate Keys Regularly">
+      Implement key rotation policies:
+
+      ```bash
+      # Generate new Supabase keys every 90 days
+      # Rotate Gemini API keys quarterly
+      # Document rotation in security logs
+      ```
+    </Step>
+  </Steps>
+
+  ### Environment-Specific Configuration
+
+  Separate configurations by environment:
+
+  ```bash
+  .env.development   # Local development
+  .env.staging       # Staging environment
+  .env.production    # Production environment
+  ```
+
+  <Warning>
+    Never use development credentials in production or vice versa.
+  </Warning>
+</Accordion>
+
+<Accordion title="API Security">
+  ### Rate Limiting
+
+  Protect your FastAPI backend from abuse:
+
+  ```python
+  from slowapi import Limiter
+  from slowapi.util import get_remote_address
+
+  limiter = Limiter(key_func=get_remote_address)
+  app.state.limiter = limiter
+
+  @app.get("/api/endpoint")
+  @limiter.limit("100/minute")
+  async def endpoint():
+      return {"data": "response"}
+  ```
+
+  ### CORS Configuration
+
+  Restrict allowed origins:
+
+  ```python
+  from fastapi.middleware.cors import CORSMiddleware
+
+  app.add_middleware(
+      CORSMiddleware,
+      allow_origins=[
+          "https://sanl.com",
+          "https://www.sanl.com"
+      ],
+      allow_credentials=True,
+      allow_methods=["GET", "POST", "PUT", "DELETE"],
+      allow_headers=["*"],
+  )
+  ```
+
+  <Warning>
+    Never use `allow_origins=["*"]` in production.
+  </Warning>
+
+  ### Input Validation
+
+  Always validate and sanitize inputs:
+
+  ```python
+  from pydantic import BaseModel, validator
+
+  class PatientData(BaseModel):
+      name: str
+      age: int
+      weight: float
+
+      @validator('age')
+      def validate_age(cls, v):
+          if v < 0 or v > 150:
+              raise ValueError('Invalid age')
+          return v
+  ```
+</Accordion>
+
+<Accordion title="Authentication and Authorization">
+  ### Supabase Authentication
+
+  Implement proper authentication flows:
+
+  ```python
+  from supabase import create_client
+  from fastapi import HTTPException, Depends
+  from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+  security = HTTPBearer()
+
+  async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+      token = credentials.credentials
+      # Verify with Supabase
+      user = supabase.auth.get_user(token)
+      if not user:
+          raise HTTPException(status_code=401, detail="Invalid token")
+      return user
+  ```
+
+  ### Role-Based Access Control (RBAC)
+
+  Implement role checks:
+
+  ```python
+  from enum import Enum
+
+  class UserRole(str, Enum):
+      ADMIN = "admin"
+      NUTRITIONIST = "nutritionist"
+      PATIENT = "patient"
+
+  def require_role(required_role: UserRole):
+      async def role_checker(user = Depends(verify_token)):
+          if user.role != required_role:
+              raise HTTPException(status_code=403, detail="Insufficient permissions")
+          return user
+      return role_checker
+  ```
+</Accordion>
+
+<Accordion title="HTTPS and SSL/TLS">
+  ### Force HTTPS
+
+  Redirect all HTTP traffic to HTTPS:
+
+  ```nginx
+  server {
+      listen 80;
+      server_name api.sanl.com sanl.com;
+      return 301 https://$server_name$request_uri;
+  }
+  ```
+
+  ### SSL Certificate Management
+
+  Use Let's Encrypt for free SSL certificates:
+
+  ```bash
+  # Install certbot
+  sudo apt-get install certbot python3-certbot-nginx
+
+  # Obtain certificate
+  sudo certbot --nginx -d api.sanl.com -d www.sanl.com
+
+  # Auto-renewal
+  sudo certbot renew --dry-run
+  ```
+
+  ### Security Headers
+
+  Add security headers in Nginx:
+
+  ```nginx
+  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+  add_header X-Frame-Options "SAMEORIGIN" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header X-XSS-Protection "1; mode=block" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+  ```
+</Accordion>
+
+## Monitoring and Logging
+
+<Accordion title="Application Monitoring">
+  ### Health Checks
+
+  Implement comprehensive health checks:
+
+  ```python
+  @app.get("/health")
+  async def health_check():
+      return {
+          "status": "healthy",
+          "timestamp": datetime.now().isoformat(),
+          "version": "1.0.0",
+          "services": {
+              "database": await check_database(),
+              "gemini": await check_gemini_api(),
+          }
+      }
+
+  async def check_database():
+      try:
+          response = supabase.table('health_check').select('*').limit(1).execute()
+          return "connected"
+      except:
+          return "disconnected"
+  ```
+
+  ### Uptime Monitoring
+
+  Use monitoring services:
+
+  - **UptimeRobot** - Free tier available
+  - **Pingdom** - Comprehensive monitoring
+  - **Datadog** - Full-stack observability
+  - **New Relic** - Application performance monitoring
+
+  Configure alerts for:
+  - HTTP 5xx errors
+  - Response time > 2 seconds
+  - Service downtime > 1 minute
+  - High CPU/memory usage
+</Accordion>
+
+<Accordion title="Structured Logging">
+  ### Backend Logging
+
+  Implement structured logging:
+
+  ```python
+  import logging
+  import json
+  from datetime import datetime
+
+  class JSONFormatter(logging.Formatter):
+      def format(self, record):
+          log_data = {
+              "timestamp": datetime.utcnow().isoformat(),
+              "level": record.levelname,
+              "message": record.getMessage(),
+              "module": record.module,
+              "function": record.funcName,
+          }
+          return json.dumps(log_data)
+
+  handler = logging.StreamHandler()
+  handler.setFormatter(JSONFormatter())
+  logger = logging.getLogger()
+  logger.addHandler(handler)
+  logger.setLevel(logging.INFO)
+  ```
+
+  ### Frontend Logging
+
+  Track frontend errors:
+
+  ```typescript
+  // Use Sentry for error tracking
+  import * as Sentry from "@sentry/nextjs";
+
+  Sentry.init({
+    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    environment: process.env.NODE_ENV,
+    tracesSampleRate: 1.0,
+  });
+  ```
+
+  ### Log Aggregation
+
+  Centralize logs with:
+
+  - **ELK Stack** (Elasticsearch, Logstash, Kibana)
+  - **Grafana Loki**
+  - **CloudWatch Logs** (AWS)
+  - **Google Cloud Logging**
+</Accordion>
+
+<Accordion title="Performance Metrics">
+  ### Key Metrics to Track
+
+  <CardGroup cols={2}>
+    <Card title="Response Time" icon="clock">
+      - API endpoint latency
+      - Page load time
+      - Database query duration
+    </Card>
+    <Card title="Throughput" icon="chart-line">
+      - Requests per second
+      - Concurrent users
+      - API call volume
+    </Card>
+    <Card title="Error Rate" icon="triangle-exclamation">
+      - 4xx client errors
+      - 5xx server errors
+      - Failed API calls
+    </Card>
+    <Card title="Resource Usage" icon="server">
+      - CPU utilization
+      - Memory consumption
+      - Disk I/O
+    </Card>
+  </CardGroup>
+
+  ### Prometheus Metrics
+
+  Add metrics to FastAPI:
+
+  ```python
+  from prometheus_client import Counter, Histogram
+
+  request_count = Counter('http_requests_total', 'Total HTTP requests')
+  request_duration = Histogram('http_request_duration_seconds', 'HTTP request duration')
+
+  @app.middleware("http")
+  async def add_metrics(request, call_next):
+      request_count.inc()
+      start_time = time.time()
+      response = await call_next(request)
+      request_duration.observe(time.time() - start_time)
+      return response
+  ```
+</Accordion>
+
+## Scaling Considerations
+
+<Accordion title="Horizontal Scaling">
+  ### Load Balancing
+
+  Distribute traffic across multiple backend instances:
+
+  ```nginx
+  upstream sanl_backend {
+      least_conn;  # Use least connections algorithm
+      server backend1.sanl.com:8000 weight=1;
+      server backend2.sanl.com:8000 weight=1;
+      server backend3.sanl.com:8000 weight=1;
+  }
+
+  server {
+      listen 443 ssl http2;
+      server_name api.sanl.com;
+
+      location / {
+          proxy_pass http://sanl_backend;
+      }
+  }
+  ```
+
+  ### Kubernetes Deployment
+
+  Scale with Kubernetes:
+
+  ```yaml k8s-deployment.yaml
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: sanl-backend
+  spec:
+    replicas: 3
+    selector:
+      matchLabels:
+        app: sanl-backend
+    template:
+      metadata:
+        labels:
+          app: sanl-backend
+      spec:
+        containers:
+        - name: backend
+          image: sanl-backend:latest
+          ports:
+          - containerPort: 8000
+          env:
+          - name: GEMINI_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: sanl-secrets
+                key: gemini-api-key
+  ```
+</Accordion>
+
+<Accordion title="Database Optimization">
+  ### Supabase Connection Pooling
+
+  Optimize database connections:
+
+  ```python
+  from supabase import create_client, Client
+
+  # Use connection pooling
+  supabase: Client = create_client(
+      supabase_url,
+      supabase_key,
+      options={
+          'db': {
+              'pool_size': 20,
+              'max_overflow': 5
+          }
+      }
+  )
+  ```
+
+  ### Query Optimization
+
+  - Use indexes on frequently queried columns
+  - Implement pagination for large result sets
+  - Cache frequently accessed data
+  - Use Supabase's RLS (Row Level Security)
+</Accordion>
+
+<Accordion title="Caching Strategy">
+  ### Redis Caching
+
+  Implement caching for API responses:
+
+  ```python
+  import redis
+  from functools import wraps
+
+  redis_client = redis.Redis(host='localhost', port=6379, db=0)
+
+  def cache_response(expire_seconds=300):
+      def decorator(func):
+          @wraps(func)
+          async def wrapper(*args, **kwargs):
+              cache_key = f"{func.__name__}:{str(args)}:{str(kwargs)}"
+              cached = redis_client.get(cache_key)
+              if cached:
+                  return json.loads(cached)
+              result = await func(*args, **kwargs)
+              redis_client.setex(cache_key, expire_seconds, json.dumps(result))
+              return result
+          return wrapper
+      return decorator
+  ```
+
+  ### CDN for Static Assets
+
+  Use CDN for Next.js static files:
+
+  - **Vercel CDN** (automatic with Vercel deployment)
+  - **Cloudflare**
+  - **AWS CloudFront**
+  - **Fastly**
+</Accordion>
+
+## Backup and Disaster Recovery
+
+<Accordion title="Database Backups">
+  ### Supabase Automatic Backups
+
+  Supabase provides automatic backups on paid plans:
+
+  - **Daily backups** retained for 7 days
+  - **Point-in-time recovery** (PITR)
+  - **Manual backups** before major changes
+
+  ### Manual Backup Strategy
+
+  ```bash
+  # Export database schema
+  pg_dump -h db.your-project.supabase.co -U postgres -s your_db > schema.sql
+
+  # Export data
+  pg_dump -h db.your-project.supabase.co -U postgres -a your_db > data.sql
+  ```
+
+  Schedule automated backups:
+
+  ```bash cron-backup.sh
+  #!/bin/bash
+  DATE=$(date +%Y%m%d_%H%M%S)
+  pg_dump -h $SUPABASE_HOST -U postgres your_db | gzip > backup_$DATE.sql.gz
+  # Upload to S3
+  aws s3 cp backup_$DATE.sql.gz s3://sanl-backups/
+  ```
+</Accordion>
+
+<Accordion title="Disaster Recovery Plan">
+  ### Recovery Time Objective (RTO)
+
+  Target: **< 1 hour** for critical services
+
+  ### Recovery Point Objective (RPO)
+
+  Target: **< 5 minutes** of data loss
+
+  ### Recovery Procedures
+
+  <Steps>
+    <Step title="Assess Impact">
+      Identify affected services and severity level
+    </Step>
+
+    <Step title="Restore from Backup">
+      ```bash
+      # Restore database
+      gunzip -c backup_20260305_120000.sql.gz | psql -h $SUPABASE_HOST -U postgres your_db
+      ```
+    </Step>
+
+    <Step title="Verify Data Integrity">
+      Run health checks and data validation queries
+    </Step>
+
+    <Step title="Resume Services">
+      Restart application services and monitor for issues
+    </Step>
+
+    <Step title="Post-Incident Review">
+      Document incident and implement preventive measures
+    </Step>
+  </Steps>
+</Accordion>
+
+## Compliance and Data Privacy
+
+<Warning>
+  Healthcare applications must comply with data protection regulations like HIPAA, GDPR, or local equivalents.
+</Warning>
+
+<Accordion title="Data Protection">
+  ### Encryption at Rest
+
+  Supabase provides encryption at rest by default. Ensure:
+
+  - Database encryption enabled
+  - File storage encryption (if using Supabase Storage)
+  - Backup encryption
+
+  ### Encryption in Transit
+
+  - Use HTTPS/TLS 1.3 for all connections
+  - Enable SSL for database connections
+  - Secure WebSocket connections (WSS)
+
+  ### Data Anonymization
+
+  For analytics and testing:
+
+  ```python
+  def anonymize_patient_data(data):
+      return {
+          "patient_id": hash_id(data["patient_id"]),
+          "age_group": categorize_age(data["age"]),
+          "weight_range": categorize_weight(data["weight"]),
+          # Remove PII
+      }
+  ```
+</Accordion>
+
+<Accordion title="Audit Logging">
+  Track all sensitive operations:
+
+  ```python
+  async def log_audit_event(user_id: str, action: str, resource: str, details: dict):
+      audit_entry = {
+          "timestamp": datetime.utcnow(),
+          "user_id": user_id,
+          "action": action,
+          "resource": resource,
+          "details": details,
+          "ip_address": request.client.host
+      }
+      await supabase.table('audit_logs').insert(audit_entry).execute()
+  ```
+
+  Log events:
+  - User authentication/authorization
+  - Data access and modifications
+  - Configuration changes
+  - API key usage
+</Accordion>
+
+## Deployment Checklist
+
+Before going live, verify:
+
+<Steps>
+  <Step title="Environment Configuration">
+    - [ ] All environment variables configured
+    - [ ] `.env` files not committed to git
+    - [ ] Production API keys active
+    - [ ] Database credentials secured
+  </Step>
+
+  <Step title="Security">
+    - [ ] HTTPS enabled with valid SSL certificate
+    - [ ] CORS properly configured
+    - [ ] Rate limiting implemented
+    - [ ] Input validation on all endpoints
+    - [ ] Authentication and authorization working
+  </Step>
+
+  <Step title="Performance">
+    - [ ] Database indexes created
+    - [ ] Caching configured
+    - [ ] CDN enabled for static assets
+    - [ ] Load testing completed
+  </Step>
+
+  <Step title="Monitoring">
+    - [ ] Health check endpoints active
+    - [ ] Logging configured
+    - [ ] Error tracking enabled (Sentry)
+    - [ ] Uptime monitoring configured
+    - [ ] Alert notifications set up
+  </Step>
+
+  <Step title="Backup and Recovery">
+    - [ ] Automated backups scheduled
+    - [ ] Backup restoration tested
+    - [ ] Disaster recovery plan documented
+  </Step>
+
+  <Step title="Documentation">
+    - [ ] API documentation up to date
+    - [ ] Deployment runbook created
+    - [ ] Incident response procedures documented
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Frontend Deployment" icon="desktop" href="/deployment/frontend">
+    Deploy the Next.js frontend
+  </Card>
+  <Card title="Backend Deployment" icon="server" href="/deployment/backend">
+    Deploy the FastAPI backend
+  </Card>
+  <Card title="API Documentation" icon="book" href="/api/overview">
+    Explore the API endpoints
+  </Card>
+  <Card title="Environment Setup" icon="gear" href="/setup/environment">
+    Configure environment variables
+  </Card>
+</CardGroup>

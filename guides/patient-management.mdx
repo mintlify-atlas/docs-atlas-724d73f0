@@ -1,0 +1,333 @@
+---
+title: "Patient Management"
+description: "Complete guide to managing patient records, creating profiles, and tracking health data in SANL"
+---
+
+## Overview
+
+The patient management system in SANL allows healthcare providers to maintain comprehensive digital health records for nutritional monitoring. Built on a modern stack with Supabase database and Next.js frontend, the platform provides secure, real-time access to patient information.
+
+<Note>
+  All patient data is stored securely in Supabase with row-level security policies to ensure HIPAA compliance and data privacy.
+</Note>
+
+## Creating a New Patient Profile
+
+Follow these steps to register a new patient in the system:
+
+<Steps>
+  <Step title="Access Patient Registration">
+    Navigate to the **Patients** section from the main dashboard and click the **Add New Patient** button.
+  </Step>
+  
+  <Step title="Enter Basic Information">
+    Complete the required patient details:
+    
+    - Full name
+    - Date of birth
+    - Contact information (email, phone)
+    - Emergency contact details
+    
+    <Tip>
+      Use the patient's preferred contact method to ensure effective follow-up communication.
+    </Tip>
+  </Step>
+  
+  <Step title="Add Medical History">
+    Document the patient's medical background:
+    
+    - Current medications
+    - Known allergies
+    - Chronic conditions
+    - Previous surgeries or major health events
+    - Family medical history relevant to nutrition
+    
+    <Warning>
+      Always verify allergy information before creating any nutrition plans. This data is automatically referenced during plan creation.
+    </Warning>
+  </Step>
+  
+  <Step title="Record Initial Measurements">
+    Capture baseline health metrics:
+    
+    - Height and weight
+    - BMI (automatically calculated)
+    - Blood pressure
+    - Blood glucose levels
+    - Other relevant biomarkers
+    
+    These measurements establish a baseline for tracking progress over time.
+  </Step>
+  
+  <Step title="Save and Review">
+    Click **Save Patient Profile**. The system will:
+    
+    - Validate all required fields
+    - Store data securely in Supabase
+    - Generate a unique patient ID
+    - Create an initial clinical record entry
+  </Step>
+</Steps>
+
+## Managing Existing Patient Records
+
+### Viewing Patient Information
+
+Access comprehensive patient data through the patient dashboard:
+
+1. Search for patients using the search bar (by name, ID, or email)
+2. Click on a patient card to view their complete profile
+3. Review tabs for different data categories:
+   - **Overview**: Key metrics and recent activity
+   - **Medical History**: Conditions, medications, allergies
+   - **Measurements**: Historical health data with trend charts
+   - **Nutrition Plans**: Active and past dietary interventions
+   - **Reports**: Generated PDF reports and AI insights
+
+### Updating Patient Records
+
+Keep patient information current with regular updates:
+
+<AccordionGroup>
+  <Accordion icon="user-pen" title="Personal Information Updates">
+    Edit contact details, emergency contacts, or demographic information:
+    
+    1. Open the patient profile
+    2. Click **Edit Profile** in the top-right corner
+    3. Modify the necessary fields
+    4. Click **Save Changes**
+    
+    All changes are timestamped and logged in the system for audit purposes.
+  </Accordion>
+  
+  <Accordion icon="notes-medical" title="Medical History Updates">
+    Add new medications, allergies, or conditions:
+    
+    1. Navigate to the **Medical History** tab
+    2. Click **Add Entry** for the relevant category
+    3. Enter details including:
+       - Date of diagnosis or prescription
+       - Severity or dosage
+       - Prescribing physician (if applicable)
+       - Notes or special considerations
+    4. Save the entry
+    
+    <Note>
+      The system will flag potential interactions between medications and nutrition plans automatically.
+    </Note>
+  </Accordion>
+  
+  <Accordion icon="chart-line" title="Recording New Measurements">
+    Track patient progress by adding new health metrics:
+    
+    1. Go to the **Measurements** tab
+    2. Click **Add Measurement**
+    3. Select the measurement type or add multiple at once
+    4. Enter values with the date and time
+    5. Save the measurements
+    
+    The system automatically:
+    - Calculates derived metrics (BMI, BMR)
+    - Generates trend visualizations
+    - Highlights significant changes from baseline
+    - Flags values outside normal ranges
+  </Accordion>
+</AccordionGroup>
+
+## Health Data Tracking
+
+### Continuous Monitoring
+
+SANL enables longitudinal tracking of patient health metrics with real-time data synchronization through Supabase:
+
+**Key Tracked Metrics:**
+
+- **Anthropometric Data**: Weight, height, BMI, body composition
+- **Vital Signs**: Blood pressure, heart rate, temperature
+- **Laboratory Results**: Blood glucose, cholesterol, HbA1c, vitamin levels
+- **Dietary Compliance**: Meal adherence, calorie intake, macronutrient distribution
+- **Activity Levels**: Exercise frequency, step counts, active minutes
+
+### Progress Visualization
+
+The platform provides multiple ways to visualize patient progress:
+
+<CardGroup cols={2}>
+  <Card title="Timeline View" icon="timeline">
+    See chronological progression of all measurements and interventions on an interactive timeline.
+  </Card>
+  
+  <Card title="Trend Charts" icon="chart-line">
+    Analyze specific metrics over custom date ranges with automatically generated trend lines and statistical analysis.
+  </Card>
+  
+  <Card title="Comparison Views" icon="arrows-left-right">
+    Compare multiple metrics side-by-side to identify correlations and patterns.
+  </Card>
+  
+  <Card title="Goal Tracking" icon="bullseye">
+    Monitor progress toward nutritional goals with visual indicators and milestone celebrations.
+  </Card>
+</CardGroup>
+
+## Clinical Record Management
+
+### Session Notes
+
+Document patient consultations and interventions:
+
+<Steps>
+  <Step title="Start a New Session">
+    From the patient profile, click **New Consultation** to begin documenting a session.
+  </Step>
+  
+  <Step title="Record Session Details">
+    Document the consultation:
+    
+    - Chief complaints or reason for visit
+    - Physical examination findings
+    - Patient-reported dietary adherence
+    - Discussion points and concerns
+    - Clinical decisions made
+  </Step>
+  
+  <Step title="Link Related Data">
+    Associate relevant information:
+    
+    - Link to specific measurements taken during visit
+    - Reference nutrition plan modifications
+    - Attach lab results or external documents
+  </Step>
+  
+  <Step title="Generate Visit Summary">
+    Use the AI-powered summary feature:
+    
+    The system leverages Google Gemini AI to generate concise visit summaries from your session notes, highlighting key points and action items.
+  </Step>
+</Steps>
+
+### Document Management
+
+Manage patient documents and reports:
+
+- **Upload External Files**: Lab results, referral letters, medical imaging reports
+- **Generate PDF Reports**: Create comprehensive nutritional assessment reports using the built-in PDF generation system (powered by fpdf2)
+- **Version Control**: Track document versions and maintain audit trails
+- **Secure Sharing**: Share documents with patients or other providers with controlled access
+
+## Patient Communication
+
+### Appointment Management
+
+Schedule and manage patient appointments:
+
+1. Navigate to the **Calendar** view
+2. Click on a time slot to create a new appointment
+3. Select the patient from the dropdown
+4. Set appointment type (initial consultation, follow-up, nutritional assessment)
+5. Add appointment notes or preparation instructions
+6. The system sends automatic email reminders to patients
+
+<Tip>
+  Set up recurring appointments for patients requiring regular monitoring to ensure consistent care.
+</Tip>
+
+### Messaging and Notifications
+
+Stay connected with patients between visits:
+
+- **In-app Messaging**: Send secure messages to patients about plan updates or reminders
+- **Email Notifications**: Automated reminders for appointments, measurements, or plan milestones
+- **Alert System**: Get notified when patients log critical measurements outside normal ranges
+
+## Data Security and Privacy
+
+SANL implements robust security measures to protect patient data:
+
+<AccordionGroup>
+  <Accordion icon="shield-halved" title="Access Controls">
+    - Role-based access control (RBAC) ensures users only see authorized data
+    - Row-level security in Supabase prevents unauthorized database access
+    - Multi-factor authentication available for enhanced security
+    - Automatic session timeout after inactivity
+  </Accordion>
+  
+  <Accordion icon="lock" title="Data Encryption">
+    - All data encrypted at rest in Supabase
+    - TLS encryption for all data in transit
+    - Secure API communication between Next.js frontend and FastAPI backend
+  </Accordion>
+  
+  <Accordion icon="clock-rotate-left" title="Audit Trails">
+    - Complete logging of all data access and modifications
+    - Timestamped record of who viewed or edited patient information
+    - Compliance reporting available for regulatory requirements
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Regular Updates" icon="calendar-check">
+    Update patient records immediately after consultations to ensure data accuracy and completeness.
+  </Card>
+  
+  <Card title="Data Verification" icon="clipboard-check">
+    Double-check critical information like allergies and medications before saving to prevent errors.
+  </Card>
+  
+  <Card title="Consistent Measurement" icon="ruler">
+    Take measurements at consistent times and conditions for accurate trend analysis.
+  </Card>
+  
+  <Card title="Comprehensive Notes" icon="file-lines">
+    Document both objective measurements and subjective patient feedback for holistic care.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion icon="exclamation-triangle" title="Patient record won't save">
+    **Common causes:**
+    
+    - Missing required fields (check for red asterisks)
+    - Invalid data format (e.g., incorrect date format)
+    - Database connection issue (check your internet connection)
+    - Session timeout (refresh the page and try again)
+    
+    If the problem persists, check the browser console for error messages or contact technical support.
+  </Accordion>
+  
+  <Accordion icon="magnifying-glass" title="Can't find a patient">
+    **Search tips:**
+    
+    - Try searching by patient ID instead of name
+    - Check for spelling variations or typos
+    - Use the advanced filter options to narrow results
+    - Verify you have access permissions for that patient
+    - Check if the patient record was archived
+  </Accordion>
+  
+  <Accordion icon="chart-line" title="Measurements not displaying in charts">
+    **Troubleshooting steps:**
+    
+    1. Verify measurements were saved successfully
+    2. Check the date range filter on the chart
+    3. Ensure at least two data points exist for trend analysis
+    4. Refresh the page to reload chart data
+    5. Clear browser cache if charts appear frozen
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create Nutrition Plans" icon="apple-whole" href="/guides/nutrition-plans">
+    Learn how to develop personalized nutrition plans for your patients.
+  </Card>
+  
+  <Card title="Analyze Patient Data" icon="chart-mixed" href="/guides/data-analysis">
+    Discover how to use AI-powered insights to optimize patient outcomes.
+  </Card>
+</CardGroup>

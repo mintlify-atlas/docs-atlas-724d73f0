@@ -1,0 +1,366 @@
+---
+title: Database Setup
+description: Configure Supabase database for SANL nutritional monitoring platform
+---
+
+SANL uses Supabase as its database backend, providing a PostgreSQL database with real-time capabilities, authentication, and storage.
+
+## Overview
+
+Supabase provides the following features for SANL:
+
+<CardGroup cols={2}>
+  <Card title="PostgreSQL Database" icon="database">
+    Robust relational database for storing patient data, nutritional records, and medical information.
+  </Card>
+  
+  <Card title="Real-time Subscriptions" icon="bolt">
+    Live updates for patient monitoring and data synchronization across devices.
+  </Card>
+  
+  <Card title="Row Level Security" icon="lock">
+    Built-in security policies to protect patient health data and ensure HIPAA compliance.
+  </Card>
+  
+  <Card title="REST & GraphQL APIs" icon="code">
+    Auto-generated APIs for seamless integration with the SANL backend.
+  </Card>
+</CardGroup>
+
+## Prerequisites
+
+Before setting up the database:
+
+- A Supabase account (sign up at [supabase.com](https://supabase.com))
+- Completed [Environment Configuration](/setup/environment) with Supabase credentials
+- Backend dependencies installed (see [Installation](/setup/installation))
+
+## Creating a Supabase Project
+
+<Steps>
+  <Step title="Sign in to Supabase">
+    Go to [app.supabase.com](https://app.supabase.com/) and sign in with your account.
+  </Step>
+
+  <Step title="Create a new project">
+    1. Click "New Project"
+    2. Select your organization
+    3. Enter project details:
+       - **Name:** SANL Production (or your preferred name)
+       - **Database Password:** Generate a strong password and save it securely
+       - **Region:** Select the region closest to your users
+       - **Pricing Plan:** Choose based on your needs (Free tier available)
+    4. Click "Create new project"
+    
+    <Info>
+      Project creation takes 2-3 minutes. You'll receive an email when it's ready.
+    </Info>
+  </Step>
+
+  <Step title="Get your project credentials">
+    Once the project is ready:
+    
+    1. Navigate to Settings > API
+    2. Copy your **Project URL** (e.g., `https://abc123.supabase.co`)
+    3. Copy your **anon/public key** from the Project API keys section
+    4. Add these to your `backend/.env` file:
+    
+    ```bash
+    SUPABASE_URL=https://your-project-id.supabase.co
+    SUPABASE_ANON_KEY=your_anon_key_here
+    ```
+  </Step>
+</Steps>
+
+## Database Schema
+
+SANL requires specific database tables to store patient and nutritional data.
+
+### Creating Tables
+
+Navigate to the SQL Editor in your Supabase dashboard and execute the following schema:
+
+```sql
+-- Patients table
+CREATE TABLE patients (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  full_name TEXT NOT NULL,
+  date_of_birth DATE NOT NULL,
+  gender TEXT,
+  medical_record_number TEXT UNIQUE,
+  contact_phone TEXT,
+  contact_email TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- Nutritional assessments table
+CREATE TABLE nutritional_assessments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  assessment_date DATE NOT NULL,
+  height_cm DECIMAL(5,2),
+  weight_kg DECIMAL(5,2),
+  bmi DECIMAL(4,2),
+  dietary_intake JSONB,
+  nutritional_status TEXT,
+  recommendations TEXT,
+  assessed_by TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- AI analysis results table
+CREATE TABLE ai_analysis (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  assessment_id UUID REFERENCES nutritional_assessments(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  analysis_type TEXT NOT NULL,
+  prompt_sent TEXT,
+  ai_response JSONB,
+  confidence_score DECIMAL(3,2),
+  model_version TEXT
+);
+
+-- Create indexes for better query performance
+CREATE INDEX idx_patients_medical_record ON patients(medical_record_number);
+CREATE INDEX idx_assessments_patient ON nutritional_assessments(patient_id);
+CREATE INDEX idx_assessments_date ON nutritional_assessments(assessment_date DESC);
+CREATE INDEX idx_ai_analysis_assessment ON ai_analysis(assessment_id);
+
+-- Create updated_at trigger function
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = TIMEZONE('utc', NOW());
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Add triggers for updated_at columns
+CREATE TRIGGER update_patients_updated_at
+  BEFORE UPDATE ON patients
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_assessments_updated_at
+  BEFORE UPDATE ON nutritional_assessments
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+```
+
+<Note>
+  This schema is a starting point. Customize it based on your specific requirements and regulatory compliance needs.
+</Note>
+
+## Row Level Security (RLS)
+
+For healthcare data protection, enable Row Level Security on all tables:
+
+<Warning>
+  **Important for HIPAA Compliance:**
+  
+  Always enable RLS on tables containing patient health information. This ensures data is only accessible to authorized users.
+</Warning>
+
+```sql
+-- Enable RLS on all tables
+ALTER TABLE patients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE nutritional_assessments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_analysis ENABLE ROW LEVEL SECURITY;
+
+-- Example policy: Allow authenticated users to read their own patient data
+CREATE POLICY "Users can view their own patient records"
+  ON patients
+  FOR SELECT
+  USING (auth.uid() = id);
+
+-- Example policy: Allow service role full access (for backend API)
+CREATE POLICY "Service role has full access to patients"
+  ON patients
+  FOR ALL
+  USING (auth.jwt()->>'role' = 'service_role');
+```
+
+<Info>
+  Adjust RLS policies based on your authentication setup and access control requirements.
+</Info>
+
+## Connecting from Python Backend
+
+The SANL backend uses the `supabase` Python client to interact with the database.
+
+### Installation
+
+The Supabase client is included in `requirements.txt`:
+
+```bash
+pip install supabase
+```
+
+### Basic Connection
+
+```python
+from supabase import create_client, Client
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Initialize Supabase client
+supabase: Client = create_client(
+    os.getenv("SUPABASE_URL"),
+    os.getenv("SUPABASE_ANON_KEY")
+)
+
+# Example: Query patients
+response = supabase.table("patients").select("*").execute()
+patients = response.data
+```
+
+### CRUD Operations
+
+<CodeGroup>
+  ```python Create
+  # Create a new patient record
+  data = supabase.table("patients").insert({
+      "full_name": "John Doe",
+      "date_of_birth": "1990-05-15",
+      "gender": "Male",
+      "medical_record_number": "MRN123456"
+  }).execute()
+  ```
+
+  ```python Read
+  # Get all patients
+  response = supabase.table("patients").select("*").execute()
+  
+  # Get specific patient by ID
+  patient = supabase.table("patients").select("*").eq("id", patient_id).execute()
+  
+  # Get patient with assessments (join)
+  result = supabase.table("patients").select(
+      "*, nutritional_assessments(*)"
+  ).eq("id", patient_id).execute()
+  ```
+
+  ```python Update
+  # Update patient information
+  data = supabase.table("patients").update({
+      "contact_email": "newemail@example.com"
+  }).eq("id", patient_id).execute()
+  ```
+
+  ```python Delete
+  # Delete a patient record
+  data = supabase.table("patients").delete().eq(
+      "id", patient_id
+  ).execute()
+  ```
+</CodeGroup>
+
+## Database Migrations
+
+For production environments, use Supabase migrations to track schema changes:
+
+```bash
+# Install Supabase CLI
+npm install -g supabase
+
+# Initialize migrations
+supabase init
+
+# Create a new migration
+supabase migration new initial_schema
+
+# Apply migrations
+supabase db push
+```
+
+## Monitoring and Maintenance
+
+<CardGroup cols={2}>
+  <Card title="Database Health" icon="heart-pulse">
+    Monitor database performance in the Supabase dashboard under Database > Health.
+  </Card>
+  
+  <Card title="Query Performance" icon="gauge">
+    Use the Database > Query Performance tab to identify slow queries.
+  </Card>
+  
+  <Card title="Backups" icon="floppy-disk">
+    Automatic daily backups are enabled. Configure backup retention in Settings.
+  </Card>
+  
+  <Card title="Logs" icon="list">
+    View real-time logs in Logs > Database to debug issues.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection refused errors">
+    **Symptoms:** Unable to connect to Supabase from backend
+    
+    **Solutions:**
+    1. Verify `SUPABASE_URL` is correct in `.env`
+    2. Check that `SUPABASE_ANON_KEY` is the anon/public key
+    3. Ensure your Supabase project is active (not paused)
+    4. Check network connectivity and firewall rules
+  </Accordion>
+
+  <Accordion title="Permission denied errors">
+    **Symptoms:** `42501` error code or "permission denied for table"
+    
+    **Solutions:**
+    1. Check Row Level Security policies are configured correctly
+    2. Verify you're using the correct API key (service_role for admin operations)
+    3. Ensure RLS policies allow the operation you're attempting
+    4. Check user authentication status
+  </Accordion>
+
+  <Accordion title="Schema migration failures">
+    **Symptoms:** Migrations fail to apply or create errors
+    
+    **Solutions:**
+    1. Check SQL syntax in migration files
+    2. Ensure migrations are applied in correct order
+    3. Verify no conflicting constraints or foreign keys
+    4. Use `supabase db reset` to reset local database (development only)
+  </Accordion>
+
+  <Accordion title="Slow query performance">
+    **Symptoms:** Database queries taking too long
+    
+    **Solutions:**
+    1. Add indexes on frequently queried columns
+    2. Use `EXPLAIN ANALYZE` to identify bottlenecks
+    3. Optimize complex joins and subqueries
+    4. Consider pagination for large result sets
+    5. Review and optimize RLS policies
+  </Accordion>
+</AccordionGroup>
+
+## Security Best Practices
+
+<Warning>
+  **Healthcare Data Protection:**
+  
+  1. **Enable RLS** on all tables with patient data
+  2. **Use service_role key** only in backend, never in frontend
+  3. **Implement audit logging** for all data access
+  4. **Encrypt sensitive fields** at application level
+  5. **Regular backups** and disaster recovery testing
+  6. **Compliance review** for HIPAA, GDPR, or local regulations
+</Warning>
+
+## Next Steps
+
+After setting up your database:
+
+1. [Configure Google Gemini AI integration](/setup/ai-integration)
+2. Test database connectivity from your backend
+3. Implement your application's data models
+4. Set up authentication and authorization

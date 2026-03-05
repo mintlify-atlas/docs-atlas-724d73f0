@@ -1,0 +1,482 @@
+---
+title: 'AI-Powered Insights'
+description: 'Intelligent nutritional analysis using Google Gemini 1.5 Flash for personalized health recommendations'
+icon: 'brain'
+---
+
+## Overview
+
+SANL leverages Google's Gemini 1.5 Flash AI model to provide intelligent, context-aware nutritional insights and recommendations. The system analyzes patient data, dietary patterns, and clinical history to generate personalized guidance for both healthcare providers and patients.
+
+<Note>
+Gemini 1.5 Flash (RF-11) provides fast, accurate analysis while maintaining cost-effectiveness for real-time insights.
+</Note>
+
+## Key Capabilities
+
+<CardGroup cols={2}>
+  <Card title="Nutritional Analysis" icon="microscope">
+    Deep analysis of dietary patterns and nutrient adequacy
+  </Card>
+  <Card title="Personalized Recommendations" icon="lightbulb">
+    AI-generated suggestions based on individual health profiles
+  </Card>
+  <Card title="Risk Detection" icon="triangle-exclamation">
+    Early identification of nutritional deficiencies and concerns
+  </Card>
+  <Card title="Meal Planning" icon="calendar-days">
+    Intelligent meal suggestions aligned with dietary goals
+  </Card>
+</CardGroup>
+
+## Architecture
+
+The AI insights system integrates with:
+
+- **Google Generative AI**: Gemini 1.5 Flash model for natural language processing
+- **Clinical Records**: Patient history and medical conditions
+- **Nutritional Data**: Real-time intake and goals tracking
+- **FastAPI Backend**: Async processing for efficient AI queries
+
+## Configuration
+
+### API Setup
+
+Configure your Gemini API credentials:
+
+```bash .env
+# IA - Gemini 1.5 Flash (RF-11)
+GEMINI_API_KEY=your_api_key_here
+```
+
+### Python Integration
+
+Initialize the Gemini client:
+
+```python
+import google.generativeai as genai
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Configure Gemini API
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# Initialize the model
+model = genai.GenerativeModel('gemini-1.5-flash')
+```
+
+## Use Cases
+
+<Tabs>
+  <Tab title="Nutritional Analysis">
+    ### Analyze Dietary Patterns
+
+    Generate comprehensive analysis of patient nutritional intake:
+
+    ```python
+    from fastapi import APIRouter, HTTPException
+    from pydantic import BaseModel
+    from typing import List, Dict
+
+    router = APIRouter()
+
+    class NutritionalAnalysisRequest(BaseModel):
+        patient_id: str
+        intake_data: List[Dict]
+        goals: Dict
+        medical_history: Dict
+
+    @router.post("/api/ai/analyze-nutrition")
+    async def analyze_nutrition(request: NutritionalAnalysisRequest):
+        try:
+            # Prepare prompt with patient context
+            prompt = f"""
+            You are a clinical nutritionist analyzing patient dietary data.
+            
+            Patient Medical History:
+            - Conditions: {request.medical_history.get('conditions', [])}
+            - Allergies: {request.medical_history.get('allergies', [])}
+            - Medications: {request.medical_history.get('medications', [])}
+            
+            Nutritional Goals:
+            - Daily Calories: {request.goals.get('daily_calories')} kcal
+            - Protein: {request.goals.get('daily_protein')} g
+            - Carbs: {request.goals.get('daily_carbs')} g
+            - Fats: {request.goals.get('daily_fats')} g
+            
+            Recent Intake (Last 7 Days):
+            {request.intake_data}
+            
+            Please provide:
+            1. Overall nutritional adequacy assessment
+            2. Macro and micronutrient balance analysis
+            3. Identified deficiencies or excesses
+            4. Specific recommendations for improvement
+            5. Potential health risks based on current patterns
+            """
+            
+            # Generate analysis using Gemini
+            response = model.generate_content(prompt)
+            
+            return {
+                "success": True,
+                "analysis": response.text,
+                "patient_id": request.patient_id,
+                "analyzed_at": datetime.utcnow().isoformat()
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"AI analysis failed: {str(e)}")
+    ```
+
+    ### Detect Nutritional Risks
+
+    ```python
+    @router.post("/api/ai/detect-risks")
+    async def detect_nutritional_risks(patient_id: str):
+        # Fetch patient data from Supabase
+        intake = supabase.table("nutritional_intake") \
+            .select("*") \
+            .eq("patient_id", patient_id) \
+            .order("meal_time", desc=True) \
+            .limit(30) \
+            .execute()
+        
+        clinical_record = supabase.table("clinical_records") \
+            .select("*") \
+            .eq("patient_id", patient_id) \
+            .order("created_at", desc=True) \
+            .limit(1) \
+            .execute()
+        
+        if not intake.data:
+            return {"risks": [], "message": "Insufficient data for analysis"}
+        
+        prompt = f"""
+        Analyze the following nutritional data for potential health risks:
+        
+        Patient Clinical Status: {clinical_record.data[0] if clinical_record.data else 'No record'}
+        Recent Nutritional Intake: {intake.data}
+        
+        Identify:
+        - Potential nutrient deficiencies
+        - Excessive intake of harmful nutrients (sodium, saturated fats, etc.)
+        - Patterns inconsistent with medical conditions
+        - Risk of malnutrition or overnutrition
+        
+        Provide risk level (low/medium/high) and specific recommendations.
+        """
+        
+        response = model.generate_content(prompt)
+        
+        return {
+            "patient_id": patient_id,
+            "risk_assessment": response.text,
+            "data_points_analyzed": len(intake.data)
+        }
+    ```
+  </Tab>
+
+  <Tab title="Meal Planning">
+    ### Generate Meal Plans
+
+    Create personalized meal suggestions:
+
+    ```python
+    class MealPlanRequest(BaseModel):
+        patient_id: str
+        days: int = 7
+        dietary_preferences: List[str]
+        restrictions: List[str]
+        calorie_target: float
+
+    @router.post("/api/ai/generate-meal-plan")
+    async def generate_meal_plan(request: MealPlanRequest):
+        # Get patient goals and history
+        goals = supabase.table("nutritional_goals") \
+            .select("*") \
+            .eq("patient_id", request.patient_id) \
+            .execute()
+        
+        prompt = f"""
+        Create a {request.days}-day meal plan for a patient with:
+        
+        Dietary Preferences: {', '.join(request.dietary_preferences)}
+        Restrictions/Allergies: {', '.join(request.restrictions)}
+        
+        Daily Targets:
+        - Calories: {request.calorie_target} kcal
+        - Protein: {goals.data[0]['daily_protein']} g
+        - Carbs: {goals.data[0]['daily_carbs']} g
+        - Fats: {goals.data[0]['daily_fats']} g
+        
+        For each day, provide:
+        - Breakfast, Lunch, Dinner, and 2 Snacks
+        - Specific portions and approximate nutritional values
+        - Variety and cultural appropriateness
+        - Easy-to-prepare options
+        
+        Format as structured JSON with meal details.
+        """
+        
+        response = model.generate_content(prompt)
+        
+        # Store generated plan
+        plan_record = supabase.table("meal_plans").insert({
+            "patient_id": request.patient_id,
+            "plan_content": response.text,
+            "days": request.days,
+            "generated_at": datetime.utcnow().isoformat()
+        }).execute()
+        
+        return {
+            "success": True,
+            "meal_plan": response.text,
+            "plan_id": plan_record.data[0]["id"]
+        }
+    ```
+  </Tab>
+
+  <Tab title="Clinical Insights">
+    ### Provider Dashboard Insights
+
+    Generate summaries for healthcare providers:
+
+    ```python
+    @router.get("/api/ai/patient-summary/{patient_id}")
+    async def generate_patient_summary(patient_id: str):
+        # Gather comprehensive patient data
+        records = supabase.table("clinical_records") \
+            .select("*") \
+            .eq("patient_id", patient_id) \
+            .execute()
+        
+        intake = supabase.table("nutritional_intake") \
+            .select("*") \
+            .eq("patient_id", patient_id) \
+            .order("meal_time", desc=True) \
+            .limit(50) \
+            .execute()
+        
+        goals = supabase.table("nutritional_goals") \
+            .select("*") \
+            .eq("patient_id", patient_id) \
+            .execute()
+        
+        prompt = f"""
+        Generate a clinical summary for healthcare provider review:
+        
+        Clinical Records: {records.data}
+        Nutritional Goals: {goals.data}
+        Recent Intake (50 entries): {intake.data}
+        
+        Provide:
+        1. Current nutritional status overview
+        2. Progress towards goals
+        3. Adherence rate and patterns
+        4. Areas of concern requiring intervention
+        5. Positive trends and achievements
+        6. Recommended next steps for care
+        
+        Format for quick clinical review.
+        """
+        
+        response = model.generate_content(prompt)
+        
+        return {
+            "patient_id": patient_id,
+            "summary": response.text,
+            "generated_at": datetime.utcnow().isoformat()
+        }
+    ```
+  </Tab>
+</Tabs>
+
+## Advanced Features
+
+### Context-Aware Recommendations
+
+```python
+from typing import Optional
+
+class RecommendationContext(BaseModel):
+    patient_id: str
+    context_type: str  # 'post_meal', 'daily_review', 'weekly_summary'
+    additional_context: Optional[Dict] = None
+
+@router.post("/api/ai/contextual-recommendations")
+async def get_contextual_recommendations(context: RecommendationContext):
+    # Fetch relevant data based on context
+    if context.context_type == "post_meal":
+        last_meal = supabase.table("nutritional_intake") \
+            .select("*") \
+            .eq("patient_id", context.patient_id) \
+            .order("meal_time", desc=True) \
+            .limit(1) \
+            .execute()
+        
+        prompt = f"""
+        The patient just logged: {last_meal.data[0]}
+        
+        Provide immediate feedback:
+        - Was this meal balanced?
+        - What could improve the next meal?
+        - Hydration reminder if needed
+        - Encouragement or gentle correction
+        
+        Keep it brief, supportive, and actionable.
+        """
+    
+    elif context.context_type == "daily_review":
+        today_intake = context.additional_context.get("today_intake", [])
+        goals = context.additional_context.get("goals", {})
+        
+        prompt = f"""
+        Daily Review:
+        Today's Intake: {today_intake}
+        Goals: {goals}
+        
+        Provide end-of-day insights:
+        - How well did they meet their goals?
+        - What nutrients are still needed?
+        - Suggestions for tomorrow
+        """
+    
+    response = model.generate_content(prompt)
+    
+    return {
+        "context_type": context.context_type,
+        "recommendations": response.text
+    }
+```
+
+### Multi-Patient Analysis
+
+```python
+@router.post("/api/ai/cohort-analysis")
+async def analyze_patient_cohort(patient_ids: List[str]):
+    """
+    Analyze patterns across multiple patients for population health insights
+    """
+    cohort_data = []
+    
+    for patient_id in patient_ids:
+        data = supabase.table("nutritional_intake") \
+            .select("total_calories, macros") \
+            .eq("patient_id", patient_id) \
+            .execute()
+        cohort_data.append(data.data)
+    
+    prompt = f"""
+    Analyze this cohort of {len(patient_ids)} patients:
+    {cohort_data}
+    
+    Identify:
+    - Common nutritional patterns
+    - Population-level deficiencies
+    - Successful intervention strategies
+    - Areas for program improvement
+    """
+    
+    response = model.generate_content(prompt)
+    
+    return {
+        "cohort_size": len(patient_ids),
+        "analysis": response.text
+    }
+```
+
+## Best Practices
+
+<Tip>
+Always validate AI-generated recommendations with clinical expertise before implementing patient care changes.
+</Tip>
+
+- **Human Oversight**: Use AI as a decision support tool, not a replacement for clinical judgment
+- **Data Privacy**: Never include personally identifiable information in AI prompts
+- **Prompt Engineering**: Craft specific, structured prompts for consistent outputs
+- **Error Handling**: Implement robust fallbacks for API failures
+- **Rate Limiting**: Monitor API usage to stay within quota limits
+- **Caching**: Cache common analyses to reduce API calls and costs
+
+<Info>
+Gemini 1.5 Flash offers excellent performance for real-time analysis while being cost-effective for high-volume applications.
+</Info>
+
+## Response Validation
+
+```python
+from pydantic import BaseModel, validator
+
+class AIInsightResponse(BaseModel):
+    analysis: str
+    confidence_score: Optional[float] = None
+    sources: Optional[List[str]] = None
+    
+    @validator('analysis')
+    def validate_analysis(cls, v):
+        if len(v) < 50:
+            raise ValueError("Analysis too brief, may indicate API error")
+        return v
+
+# Use in endpoint
+@router.post("/api/ai/validated-analysis")
+async def get_validated_analysis(request: NutritionalAnalysisRequest):
+    response = model.generate_content(prompt)
+    
+    # Validate response quality
+    try:
+        validated = AIInsightResponse(
+            analysis=response.text,
+            confidence_score=0.95
+        )
+        return validated
+    except ValueError as e:
+        raise HTTPException(status_code=500, detail=f"Invalid AI response: {str(e)}")
+```
+
+## Performance Optimization
+
+```python
+import asyncio
+from functools import lru_cache
+
+# Cache common analyses
+@lru_cache(maxsize=100)
+def get_cached_food_analysis(food_item: str):
+    response = model.generate_content(f"Nutritional analysis of {food_item}")
+    return response.text
+
+# Batch processing
+async def batch_analyze_patients(patient_ids: List[str]):
+    tasks = [
+        generate_patient_summary(patient_id)
+        for patient_id in patient_ids
+    ]
+    results = await asyncio.gather(*tasks)
+    return results
+```
+
+## Dependencies
+
+Required packages:
+
+```txt
+google-generativeai
+fastapi
+uvicorn
+supabase
+python-dotenv
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="PDF Reports" icon="file-pdf" href="/features/pdf-reports">
+    Generate comprehensive reports with AI insights
+  </Card>
+  <Card title="Clinical Records" icon="folder-medical" href="/features/clinical-records">
+    Integrate AI analysis with patient records
+  </Card>
+</CardGroup>

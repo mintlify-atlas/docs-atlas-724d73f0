@@ -1,0 +1,318 @@
+---
+title: Frontend Deployment
+description: Deploy the SANL Next.js frontend application to production
+---
+
+The SANL frontend is built with Next.js 16.1.6 and React 19, optimized for production deployment on various platforms.
+
+## Prerequisites
+
+Before deploying, ensure you have:
+
+- Node.js 20 or higher installed
+- Access to your deployment platform
+- Environment variables configured
+- Production backend API endpoint
+
+## Build Configuration
+
+The frontend uses the following Next.js configuration:
+
+```typescript next.config.ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  reactCompiler: true,
+  reactStrictMode: true,
+};
+
+export default nextConfig;
+```
+
+## Deployment Options
+
+<CardGroup cols={2}>
+  <Card title="Vercel" icon="triangle" color="#000000">
+    Recommended platform for Next.js applications with zero configuration
+  </Card>
+  <Card title="Self-Hosted" icon="server" color="#0070f3">
+    Deploy on your own infrastructure with full control
+  </Card>
+</CardGroup>
+
+## Deploying to Vercel
+
+<Steps>
+  <Step title="Install Vercel CLI">
+    Install the Vercel CLI globally:
+
+    ```bash
+    npm install -g vercel
+    ```
+  </Step>
+
+  <Step title="Login to Vercel">
+    Authenticate with your Vercel account:
+
+    ```bash
+    vercel login
+    ```
+  </Step>
+
+  <Step title="Configure Environment Variables">
+    Set up your production environment variables in the Vercel dashboard or via CLI:
+
+    ```bash
+    vercel env add NEXT_PUBLIC_API_URL production
+    vercel env add NEXT_PUBLIC_BACKEND_URL production
+    ```
+
+    <Note>
+      All environment variables prefixed with `NEXT_PUBLIC_` are exposed to the browser.
+    </Note>
+  </Step>
+
+  <Step title="Deploy to Production">
+    Deploy your application:
+
+    ```bash
+    cd frontend
+    vercel --prod
+    ```
+
+    The CLI will guide you through the deployment process.
+  </Step>
+</Steps>
+
+### GitHub Integration
+
+For automatic deployments:
+
+1. Connect your GitHub repository to Vercel
+2. Configure build settings:
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `.next`
+   - **Install Command**: `npm install`
+3. Set environment variables in project settings
+4. Enable automatic deployments for your main branch
+
+## Self-Hosted Deployment
+
+<Steps>
+  <Step title="Build the Application">
+    Create an optimized production build:
+
+    ```bash
+    cd frontend
+    npm install
+    npm run build
+    ```
+
+    This generates the `.next` directory with optimized production assets.
+  </Step>
+
+  <Step title="Configure Environment Variables">
+    Create a `.env.production` file:
+
+    ```bash .env.production
+    NEXT_PUBLIC_API_URL=https://api.your-domain.com
+    NEXT_PUBLIC_BACKEND_URL=https://api.your-domain.com
+    ```
+
+    <Warning>
+      Never commit `.env.production` to version control. Use secure secret management.
+    </Warning>
+  </Step>
+
+  <Step title="Start the Production Server">
+    Run the Next.js production server:
+
+    ```bash
+    npm start
+    ```
+
+    By default, this starts the server on port 3000.
+  </Step>
+</Steps>
+
+### Using PM2 for Process Management
+
+<CodeGroup>
+
+```bash Install PM2
+npm install -g pm2
+```
+
+```bash Start Application
+cd frontend
+pm2 start npm --name "sanl-frontend" -- start
+```
+
+```bash Configure Auto-Restart
+pm2 startup
+pm2 save
+```
+
+```bash Monitor Application
+pm2 monit
+pm2 logs sanl-frontend
+```
+
+</CodeGroup>
+
+### Docker Deployment
+
+Create a `Dockerfile` in the frontend directory:
+
+```dockerfile Dockerfile
+FROM node:20-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+RUN npm run build
+
+# Production image
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT=3000
+
+CMD ["node", "server.js"]
+```
+
+Build and run the Docker container:
+
+```bash
+docker build -t sanl-frontend .
+docker run -p 3000:3000 --env-file .env.production sanl-frontend
+```
+
+## Environment Variables
+
+<Info>
+  The frontend requires the following environment variables for production:
+</Info>
+
+| Variable | Description | Example |
+|----------|-------------|----------|
+| `NEXT_PUBLIC_API_URL` | Backend API base URL | `https://api.sanl.com` |
+| `NEXT_PUBLIC_BACKEND_URL` | Alternative backend endpoint | `https://api.sanl.com` |
+
+## Build Scripts
+
+From `package.json`:
+
+```json package.json
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  }
+}
+```
+
+- `npm run dev` - Start development server
+- `npm run build` - Create production build
+- `npm start` - Start production server
+- `npm run lint` - Run ESLint checks
+
+## Performance Optimization
+
+<Accordion title="Enable React Compiler">
+  The SANL frontend uses the React Compiler for automatic optimization:
+
+  ```typescript
+  reactCompiler: true
+  ```
+
+  This provides automatic memoization and performance improvements.
+</Accordion>
+
+<Accordion title="Static Asset Caching">
+  Configure your CDN or reverse proxy to cache static assets:
+
+  ```nginx nginx.conf
+  location /_next/static/ {
+    expires 365d;
+    add_header Cache-Control "public, immutable";
+  }
+  ```
+</Accordion>
+
+<Accordion title="Image Optimization">
+  Next.js automatically optimizes images. Configure external image domains in `next.config.ts`:
+
+  ```typescript
+  images: {
+    domains: ['your-cdn.com'],
+  }
+  ```
+</Accordion>
+
+## Troubleshooting
+
+### Build Fails
+
+<CodeGroup>
+
+```bash Clear Cache
+rm -rf .next node_modules
+npm install
+npm run build
+```
+
+```bash Check Node Version
+node --version  # Should be 20 or higher
+```
+
+</CodeGroup>
+
+### Port Already in Use
+
+Change the port using the `PORT` environment variable:
+
+```bash
+PORT=3001 npm start
+```
+
+### Environment Variables Not Working
+
+<Warning>
+  Ensure browser-accessible variables are prefixed with `NEXT_PUBLIC_`. Rebuild after changing environment variables.
+</Warning>
+
+## Next Steps
+
+After deploying the frontend:
+
+1. [Deploy the backend](/deployment/backend)
+2. [Configure production settings](/deployment/production)
+3. Set up monitoring and analytics
+4. Configure custom domain and SSL

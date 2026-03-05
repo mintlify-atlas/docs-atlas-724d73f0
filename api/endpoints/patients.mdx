@@ -1,0 +1,737 @@
+---
+title: 'Patients'
+description: 'Manage patient profiles and demographic information'
+---
+
+## Overview
+
+The Patients API allows you to create, retrieve, update, and manage patient records in the SANL system. Each patient record contains demographic information, medical history, and links to nutritional records.
+
+<Info>
+  All patient data is protected by Supabase Row Level Security (RLS) policies. Users can only access patients they have permission to view.
+</Info>
+
+## Patient Object
+
+The patient resource represents an individual receiving nutritional monitoring services.
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the patient (UUID)
+</ResponseField>
+
+<ResponseField name="user_id" type="string" required>
+  Associated Supabase Auth user ID
+</ResponseField>
+
+<ResponseField name="first_name" type="string" required>
+  Patient's first name
+</ResponseField>
+
+<ResponseField name="last_name" type="string" required>
+  Patient's last name
+</ResponseField>
+
+<ResponseField name="email" type="string" required>
+  Patient's email address
+</ResponseField>
+
+<ResponseField name="phone" type="string">
+  Patient's phone number
+</ResponseField>
+
+<ResponseField name="date_of_birth" type="string" required>
+  Patient's date of birth in ISO 8601 format (YYYY-MM-DD)
+</ResponseField>
+
+<ResponseField name="gender" type="string" required>
+  Patient's gender
+  
+  Options: `male`, `female`, `other`, `prefer_not_to_say`
+</ResponseField>
+
+<ResponseField name="height_cm" type="number">
+  Patient's height in centimeters
+</ResponseField>
+
+<ResponseField name="weight_kg" type="number">
+  Patient's current weight in kilograms
+</ResponseField>
+
+<ResponseField name="blood_type" type="string">
+  Patient's blood type
+  
+  Options: `A+`, `A-`, `B+`, `B-`, `AB+`, `AB-`, `O+`, `O-`
+</ResponseField>
+
+<ResponseField name="allergies" type="array">
+  List of known allergies
+  
+  Array of strings
+</ResponseField>
+
+<ResponseField name="medical_conditions" type="array">
+  List of existing medical conditions
+  
+  Array of strings
+</ResponseField>
+
+<ResponseField name="nutritionist_id" type="string">
+  ID of the assigned nutritionist
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  Timestamp when the patient record was created (ISO 8601)
+</ResponseField>
+
+<ResponseField name="updated_at" type="string">
+  Timestamp when the patient record was last updated (ISO 8601)
+</ResponseField>
+
+### Example Patient Object
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "user_id": "auth0|507f1f77bcf86cd799439011",
+  "first_name": "María",
+  "last_name": "González",
+  "email": "maria.gonzalez@example.com",
+  "phone": "+52 123 456 7890",
+  "date_of_birth": "1990-05-15",
+  "gender": "female",
+  "height_cm": 165,
+  "weight_kg": 68.5,
+  "blood_type": "O+",
+  "allergies": ["peanuts", "shellfish"],
+  "medical_conditions": ["type 2 diabetes", "hypertension"],
+  "nutritionist_id": "750e8400-e29b-41d4-a716-446655440001",
+  "created_at": "2026-01-15T10:30:00Z",
+  "updated_at": "2026-03-05T14:20:00Z"
+}
+```
+
+---
+
+## List Patients
+
+<Warning>
+  This endpoint requires authentication. Include your access token in the Authorization header.
+</Warning>
+
+Retrieve a list of patients. Results are filtered based on user permissions:
+
+- **Nutritionists**: See only their assigned patients
+- **Admins**: See all patients
+- **Patients**: See only their own record
+
+```bash GET /v1/patients
+GET /v1/patients
+```
+
+### Query Parameters
+
+<ParamField query="page" type="integer" default="1">
+  Page number for pagination
+</ParamField>
+
+<ParamField query="limit" type="integer" default="20">
+  Number of results per page (max: 100)
+</ParamField>
+
+<ParamField query="search" type="string">
+  Search patients by name or email
+</ParamField>
+
+<ParamField query="nutritionist_id" type="string">
+  Filter by assigned nutritionist (admin only)
+</ParamField>
+
+<ParamField query="sort" type="string" default="created_at">
+  Sort field
+  
+  Options: `created_at`, `last_name`, `updated_at`
+</ParamField>
+
+<ParamField query="order" type="string" default="desc">
+  Sort order
+  
+  Options: `asc`, `desc`
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X GET 'http://localhost:8000/v1/patients?page=1&limit=10&search=González' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY'
+```
+
+```python Python
+import requests
+
+headers = {
+    'Authorization': f'Bearer {access_token}',
+    'apikey': supabase_anon_key
+}
+
+params = {
+    'page': 1,
+    'limit': 10,
+    'search': 'González'
+}
+
+response = requests.get(
+    'http://localhost:8000/v1/patients',
+    headers=headers,
+    params=params
+)
+
+patients = response.json()
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'http://localhost:8000/v1/patients?page=1&limit=10&search=González',
+  {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': supabaseAnonKey
+    }
+  }
+)
+
+const patients = await response.json()
+```
+</CodeGroup>
+
+### Response
+
+```json 200 OK
+{
+  "success": true,
+  "data": {
+    "patients": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "first_name": "María",
+        "last_name": "González",
+        "email": "maria.gonzalez@example.com",
+        "phone": "+52 123 456 7890",
+        "date_of_birth": "1990-05-15",
+        "gender": "female",
+        "created_at": "2026-01-15T10:30:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 1,
+      "total_pages": 1
+    }
+  },
+  "timestamp": "2026-03-05T10:30:00Z"
+}
+```
+
+---
+
+## Get Patient
+
+Retrieve a specific patient by ID.
+
+```bash GET /v1/patients/{id}
+GET /v1/patients/{id}
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Patient UUID
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X GET 'http://localhost:8000/v1/patients/550e8400-e29b-41d4-a716-446655440000' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY'
+```
+
+```python Python
+import requests
+
+patient_id = '550e8400-e29b-41d4-a716-446655440000'
+
+response = requests.get(
+    f'http://localhost:8000/v1/patients/{patient_id}',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key
+    }
+)
+
+patient = response.json()
+```
+
+```javascript JavaScript
+const patientId = '550e8400-e29b-41d4-a716-446655440000'
+
+const response = await fetch(
+  `http://localhost:8000/v1/patients/${patientId}`,
+  {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': supabaseAnonKey
+    }
+  }
+)
+
+const patient = await response.json()
+```
+</CodeGroup>
+
+### Response
+
+```json 200 OK
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "user_id": "auth0|507f1f77bcf86cd799439011",
+    "first_name": "María",
+    "last_name": "González",
+    "email": "maria.gonzalez@example.com",
+    "phone": "+52 123 456 7890",
+    "date_of_birth": "1990-05-15",
+    "gender": "female",
+    "height_cm": 165,
+    "weight_kg": 68.5,
+    "blood_type": "O+",
+    "allergies": ["peanuts", "shellfish"],
+    "medical_conditions": ["type 2 diabetes", "hypertension"],
+    "nutritionist_id": "750e8400-e29b-41d4-a716-446655440001",
+    "created_at": "2026-01-15T10:30:00Z",
+    "updated_at": "2026-03-05T14:20:00Z"
+  },
+  "timestamp": "2026-03-05T10:30:00Z"
+}
+```
+
+---
+
+## Create Patient
+
+Create a new patient record. Requires `nutritionist` or `admin` role.
+
+```bash POST /v1/patients
+POST /v1/patients
+```
+
+### Request Body
+
+<ParamField body="first_name" type="string" required>
+  Patient's first name
+</ParamField>
+
+<ParamField body="last_name" type="string" required>
+  Patient's last name
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  Patient's email address (must be unique)
+</ParamField>
+
+<ParamField body="phone" type="string">
+  Patient's phone number
+</ParamField>
+
+<ParamField body="date_of_birth" type="string" required>
+  Date of birth in YYYY-MM-DD format
+</ParamField>
+
+<ParamField body="gender" type="string" required>
+  Gender: `male`, `female`, `other`, `prefer_not_to_say`
+</ParamField>
+
+<ParamField body="height_cm" type="number">
+  Height in centimeters
+</ParamField>
+
+<ParamField body="weight_kg" type="number">
+  Weight in kilograms
+</ParamField>
+
+<ParamField body="blood_type" type="string">
+  Blood type: `A+`, `A-`, `B+`, `B-`, `AB+`, `AB-`, `O+`, `O-`
+</ParamField>
+
+<ParamField body="allergies" type="array">
+  Array of allergy strings
+</ParamField>
+
+<ParamField body="medical_conditions" type="array">
+  Array of medical condition strings
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X POST 'http://localhost:8000/v1/patients' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "first_name": "Carlos",
+    "last_name": "Ramírez",
+    "email": "carlos.ramirez@example.com",
+    "phone": "+52 987 654 3210",
+    "date_of_birth": "1985-08-22",
+    "gender": "male",
+    "height_cm": 178,
+    "weight_kg": 82.3,
+    "blood_type": "A+",
+    "allergies": ["lactose"],
+    "medical_conditions": ["high cholesterol"]
+  }'
+```
+
+```python Python
+import requests
+
+patient_data = {
+    'first_name': 'Carlos',
+    'last_name': 'Ramírez',
+    'email': 'carlos.ramirez@example.com',
+    'phone': '+52 987 654 3210',
+    'date_of_birth': '1985-08-22',
+    'gender': 'male',
+    'height_cm': 178,
+    'weight_kg': 82.3,
+    'blood_type': 'A+',
+    'allergies': ['lactose'],
+    'medical_conditions': ['high cholesterol']
+}
+
+response = requests.post(
+    'http://localhost:8000/v1/patients',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key,
+        'Content-Type': 'application/json'
+    },
+    json=patient_data
+)
+
+new_patient = response.json()
+```
+
+```javascript JavaScript
+const patientData = {
+  first_name: 'Carlos',
+  last_name: 'Ramírez',
+  email: 'carlos.ramirez@example.com',
+  phone: '+52 987 654 3210',
+  date_of_birth: '1985-08-22',
+  gender: 'male',
+  height_cm: 178,
+  weight_kg: 82.3,
+  blood_type: 'A+',
+  allergies: ['lactose'],
+  medical_conditions: ['high cholesterol']
+}
+
+const response = await fetch('http://localhost:8000/v1/patients', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'apikey': supabaseAnonKey,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(patientData)
+})
+
+const newPatient = await response.json()
+```
+</CodeGroup>
+
+### Response
+
+```json 201 Created
+{
+  "success": true,
+  "data": {
+    "id": "660e8400-e29b-41d4-a716-446655440002",
+    "user_id": "auth0|507f1f77bcf86cd799439012",
+    "first_name": "Carlos",
+    "last_name": "Ramírez",
+    "email": "carlos.ramirez@example.com",
+    "phone": "+52 987 654 3210",
+    "date_of_birth": "1985-08-22",
+    "gender": "male",
+    "height_cm": 178,
+    "weight_kg": 82.3,
+    "blood_type": "A+",
+    "allergies": ["lactose"],
+    "medical_conditions": ["high cholesterol"],
+    "created_at": "2026-03-05T10:45:00Z",
+    "updated_at": "2026-03-05T10:45:00Z"
+  },
+  "timestamp": "2026-03-05T10:45:00Z"
+}
+```
+
+---
+
+## Update Patient
+
+Update an existing patient record. Only modifiable fields need to be included.
+
+```bash PATCH /v1/patients/{id}
+PATCH /v1/patients/{id}
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Patient UUID
+</ParamField>
+
+### Request Body
+
+All fields are optional. Only include fields you want to update.
+
+<ParamField body="first_name" type="string">
+  Patient's first name
+</ParamField>
+
+<ParamField body="last_name" type="string">
+  Patient's last name
+</ParamField>
+
+<ParamField body="phone" type="string">
+  Patient's phone number
+</ParamField>
+
+<ParamField body="height_cm" type="number">
+  Height in centimeters
+</ParamField>
+
+<ParamField body="weight_kg" type="number">
+  Weight in kilograms
+</ParamField>
+
+<ParamField body="allergies" type="array">
+  Updated list of allergies
+</ParamField>
+
+<ParamField body="medical_conditions" type="array">
+  Updated list of medical conditions
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X PATCH 'http://localhost:8000/v1/patients/550e8400-e29b-41d4-a716-446655440000' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "weight_kg": 67.2,
+    "medical_conditions": ["type 2 diabetes", "hypertension", "hypothyroidism"]
+  }'
+```
+
+```python Python
+patient_id = '550e8400-e29b-41d4-a716-446655440000'
+
+update_data = {
+    'weight_kg': 67.2,
+    'medical_conditions': ['type 2 diabetes', 'hypertension', 'hypothyroidism']
+}
+
+response = requests.patch(
+    f'http://localhost:8000/v1/patients/{patient_id}',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key,
+        'Content-Type': 'application/json'
+    },
+    json=update_data
+)
+
+updated_patient = response.json()
+```
+
+```javascript JavaScript
+const patientId = '550e8400-e29b-41d4-a716-446655440000'
+
+const updateData = {
+  weight_kg: 67.2,
+  medical_conditions: ['type 2 diabetes', 'hypertension', 'hypothyroidism']
+}
+
+const response = await fetch(
+  `http://localhost:8000/v1/patients/${patientId}`,
+  {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': supabaseAnonKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(updateData)
+  }
+)
+
+const updatedPatient = await response.json()
+```
+</CodeGroup>
+
+### Response
+
+```json 200 OK
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "user_id": "auth0|507f1f77bcf86cd799439011",
+    "first_name": "María",
+    "last_name": "González",
+    "email": "maria.gonzalez@example.com",
+    "weight_kg": 67.2,
+    "medical_conditions": ["type 2 diabetes", "hypertension", "hypothyroidism"],
+    "updated_at": "2026-03-05T15:30:00Z"
+  },
+  "timestamp": "2026-03-05T15:30:00Z"
+}
+```
+
+---
+
+## Delete Patient
+
+Delete a patient record. Requires `admin` role. This action cannot be undone.
+
+```bash DELETE /v1/patients/{id}
+DELETE /v1/patients/{id}
+```
+
+<Warning>
+  Deleting a patient will also delete all associated nutritional records and reports. This action is irreversible.
+</Warning>
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Patient UUID
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE 'http://localhost:8000/v1/patients/550e8400-e29b-41d4-a716-446655440000' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY'
+```
+
+```python Python
+patient_id = '550e8400-e29b-41d4-a716-446655440000'
+
+response = requests.delete(
+    f'http://localhost:8000/v1/patients/{patient_id}',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key
+    }
+)
+```
+
+```javascript JavaScript
+const patientId = '550e8400-e29b-41d4-a716-446655440000'
+
+const response = await fetch(
+  `http://localhost:8000/v1/patients/${patientId}`,
+  {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': supabaseAnonKey
+    }
+  }
+)
+```
+</CodeGroup>
+
+### Response
+
+```json 200 OK
+{
+  "success": true,
+  "data": {
+    "message": "Patient deleted successfully",
+    "deleted_id": "550e8400-e29b-41d4-a716-446655440000"
+  },
+  "timestamp": "2026-03-05T16:00:00Z"
+}
+```
+
+---
+
+## Error Responses
+
+<Expandable title="404 Not Found">
+```json
+{
+  "success": false,
+  "error": {
+    "code": "PATIENT_NOT_FOUND",
+    "message": "Patient with the specified ID does not exist",
+    "details": {
+      "patient_id": "550e8400-e29b-41d4-a716-446655440000"
+    }
+  },
+  "timestamp": "2026-03-05T10:30:00Z"
+}
+```
+</Expandable>
+
+<Expandable title="422 Validation Error">
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": {
+      "field_errors": [
+        {
+          "field": "email",
+          "message": "Invalid email format"
+        },
+        {
+          "field": "date_of_birth",
+          "message": "Date must be in YYYY-MM-DD format"
+        }
+      ]
+    }
+  },
+  "timestamp": "2026-03-05T10:30:00Z"
+}
+```
+</Expandable>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Nutritional Records" icon="clipboard-medical" href="/api/endpoints/records">
+    Create and manage nutritional records for patients
+  </Card>
+  <Card title="Generate Reports" icon="file-pdf" href="/api/endpoints/reports">
+    Generate PDF reports and access AI insights
+  </Card>
+</CardGroup>

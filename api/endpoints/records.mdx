@@ -1,0 +1,889 @@
+---
+title: 'Records'
+description: 'Create and manage nutritional records, measurements, and dietary logs'
+---
+
+## Overview
+
+The Records API enables you to create, retrieve, and manage nutritional records for patients. Each record captures dietary intake, anthropometric measurements, and health metrics at a specific point in time.
+
+<Info>
+  Nutritional records form the foundation for AI-powered insights and report generation in SANL.
+</Info>
+
+## Record Object
+
+A nutritional record represents a comprehensive snapshot of a patient's nutritional status and dietary intake.
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the record (UUID)
+</ResponseField>
+
+<ResponseField name="patient_id" type="string" required>
+  ID of the associated patient
+</ResponseField>
+
+<ResponseField name="recorded_at" type="string" required>
+  Timestamp when the record was created (ISO 8601)
+</ResponseField>
+
+<ResponseField name="weight_kg" type="number" required>
+  Patient's weight in kilograms
+</ResponseField>
+
+<ResponseField name="height_cm" type="number">
+  Patient's height in centimeters (optional if unchanged)
+</ResponseField>
+
+<ResponseField name="bmi" type="number">
+  Calculated Body Mass Index (BMI)
+  
+  Auto-calculated from weight and height
+</ResponseField>
+
+<ResponseField name="blood_pressure" type="object">
+  Blood pressure measurements
+  
+  <Expandable title="Blood Pressure Object">
+    <ResponseField name="systolic" type="number" required>
+      Systolic pressure (mmHg)
+    </ResponseField>
+    <ResponseField name="diastolic" type="number" required>
+      Diastolic pressure (mmHg)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="glucose_mg_dl" type="number">
+  Blood glucose level in mg/dL
+</ResponseField>
+
+<ResponseField name="dietary_intake" type="object" required>
+  Daily dietary intake information
+  
+  <Expandable title="Dietary Intake Object">
+    <ResponseField name="calories" type="number" required>
+      Total calories consumed (kcal)
+    </ResponseField>
+    <ResponseField name="protein_g" type="number" required>
+      Protein intake in grams
+    </ResponseField>
+    <ResponseField name="carbohydrates_g" type="number" required>
+      Carbohydrate intake in grams
+    </ResponseField>
+    <ResponseField name="fat_g" type="number" required>
+      Fat intake in grams
+    </ResponseField>
+    <ResponseField name="fiber_g" type="number">
+      Fiber intake in grams
+    </ResponseField>
+    <ResponseField name="sodium_mg" type="number">
+      Sodium intake in milligrams
+    </ResponseField>
+    <ResponseField name="water_ml" type="number">
+      Water intake in milliliters
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meals" type="array">
+  Detailed meal log
+  
+  <Expandable title="Meal Object">
+    <ResponseField name="meal_type" type="string" required>
+      Type of meal: `breakfast`, `lunch`, `dinner`, `snack`
+    </ResponseField>
+    <ResponseField name="time" type="string" required>
+      Time of meal (HH:MM format)
+    </ResponseField>
+    <ResponseField name="foods" type="array" required>
+      List of food items consumed
+    </ResponseField>
+    <ResponseField name="calories" type="number">
+      Calories in this meal
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="activity_level" type="string">
+  Physical activity level
+  
+  Options: `sedentary`, `light`, `moderate`, `active`, `very_active`
+</ResponseField>
+
+<ResponseField name="notes" type="string">
+  Additional notes or observations
+</ResponseField>
+
+<ResponseField name="created_by" type="string">
+  ID of the user who created the record
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  Timestamp when the record was created (ISO 8601)
+</ResponseField>
+
+<ResponseField name="updated_at" type="string">
+  Timestamp when the record was last updated (ISO 8601)
+</ResponseField>
+
+### Example Record Object
+
+```json
+{
+  "id": "770e8400-e29b-41d4-a716-446655440003",
+  "patient_id": "550e8400-e29b-41d4-a716-446655440000",
+  "recorded_at": "2026-03-05T08:00:00Z",
+  "weight_kg": 68.5,
+  "height_cm": 165,
+  "bmi": 25.2,
+  "blood_pressure": {
+    "systolic": 120,
+    "diastolic": 80
+  },
+  "glucose_mg_dl": 95,
+  "dietary_intake": {
+    "calories": 1850,
+    "protein_g": 75,
+    "carbohydrates_g": 220,
+    "fat_g": 65,
+    "fiber_g": 28,
+    "sodium_mg": 2100,
+    "water_ml": 2000
+  },
+  "meals": [
+    {
+      "meal_type": "breakfast",
+      "time": "08:00",
+      "foods": ["oatmeal", "banana", "almonds", "coffee"],
+      "calories": 450
+    },
+    {
+      "meal_type": "lunch",
+      "time": "13:30",
+      "foods": ["grilled chicken", "brown rice", "mixed vegetables"],
+      "calories": 650
+    }
+  ],
+  "activity_level": "moderate",
+  "notes": "Patient reports feeling energetic. Adhering well to meal plan.",
+  "created_by": "750e8400-e29b-41d4-a716-446655440001",
+  "created_at": "2026-03-05T08:00:00Z",
+  "updated_at": "2026-03-05T08:00:00Z"
+}
+```
+
+---
+
+## List Records
+
+Retrieve nutritional records for patients. Records are filtered based on user permissions.
+
+```bash GET /v1/records
+GET /v1/records
+```
+
+### Query Parameters
+
+<ParamField query="patient_id" type="string">
+  Filter records by patient ID (required for non-admin users)
+</ParamField>
+
+<ParamField query="start_date" type="string">
+  Filter records from this date (ISO 8601 format: YYYY-MM-DD)
+</ParamField>
+
+<ParamField query="end_date" type="string">
+  Filter records until this date (ISO 8601 format: YYYY-MM-DD)
+</ParamField>
+
+<ParamField query="page" type="integer" default="1">
+  Page number for pagination
+</ParamField>
+
+<ParamField query="limit" type="integer" default="20">
+  Number of results per page (max: 100)
+</ParamField>
+
+<ParamField query="sort" type="string" default="recorded_at">
+  Sort field: `recorded_at`, `created_at`, `weight_kg`
+</ParamField>
+
+<ParamField query="order" type="string" default="desc">
+  Sort order: `asc`, `desc`
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X GET 'http://localhost:8000/v1/records?patient_id=550e8400-e29b-41d4-a716-446655440000&start_date=2026-03-01&end_date=2026-03-31' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY'
+```
+
+```python Python
+import requests
+from datetime import date
+
+params = {
+    'patient_id': '550e8400-e29b-41d4-a716-446655440000',
+    'start_date': '2026-03-01',
+    'end_date': '2026-03-31',
+    'page': 1,
+    'limit': 20
+}
+
+response = requests.get(
+    'http://localhost:8000/v1/records',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key
+    },
+    params=params
+)
+
+records = response.json()
+```
+
+```javascript JavaScript
+const params = new URLSearchParams({
+  patient_id: '550e8400-e29b-41d4-a716-446655440000',
+  start_date: '2026-03-01',
+  end_date: '2026-03-31',
+  page: 1,
+  limit: 20
+})
+
+const response = await fetch(
+  `http://localhost:8000/v1/records?${params}`,
+  {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': supabaseAnonKey
+    }
+  }
+)
+
+const records = await response.json()
+```
+</CodeGroup>
+
+### Response
+
+```json 200 OK
+{
+  "success": true,
+  "data": {
+    "records": [
+      {
+        "id": "770e8400-e29b-41d4-a716-446655440003",
+        "patient_id": "550e8400-e29b-41d4-a716-446655440000",
+        "recorded_at": "2026-03-05T08:00:00Z",
+        "weight_kg": 68.5,
+        "bmi": 25.2,
+        "dietary_intake": {
+          "calories": 1850,
+          "protein_g": 75,
+          "carbohydrates_g": 220,
+          "fat_g": 65
+        },
+        "activity_level": "moderate"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 12,
+      "total_pages": 1
+    },
+    "summary": {
+      "avg_weight": 68.8,
+      "avg_calories": 1875,
+      "total_records": 12
+    }
+  },
+  "timestamp": "2026-03-05T10:30:00Z"
+}
+```
+
+---
+
+## Get Record
+
+Retrieve a specific nutritional record by ID.
+
+```bash GET /v1/records/{id}
+GET /v1/records/{id}
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Record UUID
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X GET 'http://localhost:8000/v1/records/770e8400-e29b-41d4-a716-446655440003' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY'
+```
+
+```python Python
+record_id = '770e8400-e29b-41d4-a716-446655440003'
+
+response = requests.get(
+    f'http://localhost:8000/v1/records/{record_id}',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key
+    }
+)
+
+record = response.json()
+```
+
+```javascript JavaScript
+const recordId = '770e8400-e29b-41d4-a716-446655440003'
+
+const response = await fetch(
+  `http://localhost:8000/v1/records/${recordId}`,
+  {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': supabaseAnonKey
+    }
+  }
+)
+
+const record = await response.json()
+```
+</CodeGroup>
+
+### Response
+
+See the complete record object example above.
+
+---
+
+## Create Record
+
+Create a new nutritional record for a patient. Requires `nutritionist` or `admin` role.
+
+```bash POST /v1/records
+POST /v1/records
+```
+
+### Request Body
+
+<ParamField body="patient_id" type="string" required>
+  ID of the patient this record belongs to
+</ParamField>
+
+<ParamField body="recorded_at" type="string" required>
+  Timestamp for the record (ISO 8601)
+</ParamField>
+
+<ParamField body="weight_kg" type="number" required>
+  Patient's weight in kilograms
+</ParamField>
+
+<ParamField body="height_cm" type="number">
+  Patient's height in centimeters
+</ParamField>
+
+<ParamField body="blood_pressure" type="object">
+  Blood pressure measurements
+  
+  Contains `systolic` and `diastolic` numbers
+</ParamField>
+
+<ParamField body="glucose_mg_dl" type="number">
+  Blood glucose level in mg/dL
+</ParamField>
+
+<ParamField body="dietary_intake" type="object" required>
+  Dietary intake data
+  
+  Required fields: `calories`, `protein_g`, `carbohydrates_g`, `fat_g`
+</ParamField>
+
+<ParamField body="meals" type="array">
+  Array of meal objects with detailed food logs
+</ParamField>
+
+<ParamField body="activity_level" type="string">
+  Physical activity level: `sedentary`, `light`, `moderate`, `active`, `very_active`
+</ParamField>
+
+<ParamField body="notes" type="string">
+  Additional notes or observations
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X POST 'http://localhost:8000/v1/records' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "patient_id": "550e8400-e29b-41d4-a716-446655440000",
+    "recorded_at": "2026-03-06T09:00:00Z",
+    "weight_kg": 67.8,
+    "blood_pressure": {
+      "systolic": 118,
+      "diastolic": 78
+    },
+    "glucose_mg_dl": 92,
+    "dietary_intake": {
+      "calories": 1900,
+      "protein_g": 80,
+      "carbohydrates_g": 210,
+      "fat_g": 70,
+      "fiber_g": 30,
+      "sodium_mg": 2000,
+      "water_ml": 2200
+    },
+    "activity_level": "active",
+    "notes": "Patient completed 30 minutes of exercise"
+  }'
+```
+
+```python Python
+record_data = {
+    'patient_id': '550e8400-e29b-41d4-a716-446655440000',
+    'recorded_at': '2026-03-06T09:00:00Z',
+    'weight_kg': 67.8,
+    'blood_pressure': {
+        'systolic': 118,
+        'diastolic': 78
+    },
+    'glucose_mg_dl': 92,
+    'dietary_intake': {
+        'calories': 1900,
+        'protein_g': 80,
+        'carbohydrates_g': 210,
+        'fat_g': 70,
+        'fiber_g': 30,
+        'sodium_mg': 2000,
+        'water_ml': 2200
+    },
+    'activity_level': 'active',
+    'notes': 'Patient completed 30 minutes of exercise'
+}
+
+response = requests.post(
+    'http://localhost:8000/v1/records',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key,
+        'Content-Type': 'application/json'
+    },
+    json=record_data
+)
+
+new_record = response.json()
+```
+
+```javascript JavaScript
+const recordData = {
+  patient_id: '550e8400-e29b-41d4-a716-446655440000',
+  recorded_at: '2026-03-06T09:00:00Z',
+  weight_kg: 67.8,
+  blood_pressure: {
+    systolic: 118,
+    diastolic: 78
+  },
+  glucose_mg_dl: 92,
+  dietary_intake: {
+    calories: 1900,
+    protein_g: 80,
+    carbohydrates_g: 210,
+    fat_g: 70,
+    fiber_g: 30,
+    sodium_mg: 2000,
+    water_ml: 2200
+  },
+  activity_level: 'active',
+  notes: 'Patient completed 30 minutes of exercise'
+}
+
+const response = await fetch('http://localhost:8000/v1/records', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'apikey': supabaseAnonKey,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(recordData)
+})
+
+const newRecord = await response.json()
+```
+</CodeGroup>
+
+### Response
+
+```json 201 Created
+{
+  "success": true,
+  "data": {
+    "id": "880e8400-e29b-41d4-a716-446655440004",
+    "patient_id": "550e8400-e29b-41d4-a716-446655440000",
+    "recorded_at": "2026-03-06T09:00:00Z",
+    "weight_kg": 67.8,
+    "bmi": 24.9,
+    "blood_pressure": {
+      "systolic": 118,
+      "diastolic": 78
+    },
+    "glucose_mg_dl": 92,
+    "dietary_intake": {
+      "calories": 1900,
+      "protein_g": 80,
+      "carbohydrates_g": 210,
+      "fat_g": 70,
+      "fiber_g": 30,
+      "sodium_mg": 2000,
+      "water_ml": 2200
+    },
+    "activity_level": "active",
+    "notes": "Patient completed 30 minutes of exercise",
+    "created_at": "2026-03-06T09:00:00Z",
+    "updated_at": "2026-03-06T09:00:00Z"
+  },
+  "timestamp": "2026-03-06T09:00:00Z"
+}
+```
+
+---
+
+## Update Record
+
+Update an existing nutritional record.
+
+```bash PATCH /v1/records/{id}
+PATCH /v1/records/{id}
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Record UUID
+</ParamField>
+
+### Request Body
+
+All fields are optional. Only include fields you want to update.
+
+<ParamField body="weight_kg" type="number">
+  Updated weight
+</ParamField>
+
+<ParamField body="blood_pressure" type="object">
+  Updated blood pressure
+</ParamField>
+
+<ParamField body="glucose_mg_dl" type="number">
+  Updated glucose level
+</ParamField>
+
+<ParamField body="dietary_intake" type="object">
+  Updated dietary intake data
+</ParamField>
+
+<ParamField body="meals" type="array">
+  Updated meal log
+</ParamField>
+
+<ParamField body="activity_level" type="string">
+  Updated activity level
+</ParamField>
+
+<ParamField body="notes" type="string">
+  Updated notes
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X PATCH 'http://localhost:8000/v1/records/880e8400-e29b-41d4-a716-446655440004' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "notes": "Patient completed 45 minutes of exercise. Feeling great."
+  }'
+```
+
+```python Python
+record_id = '880e8400-e29b-41d4-a716-446655440004'
+
+update_data = {
+    'notes': 'Patient completed 45 minutes of exercise. Feeling great.'
+}
+
+response = requests.patch(
+    f'http://localhost:8000/v1/records/{record_id}',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key,
+        'Content-Type': 'application/json'
+    },
+    json=update_data
+)
+
+updated_record = response.json()
+```
+
+```javascript JavaScript
+const recordId = '880e8400-e29b-41d4-a716-446655440004'
+
+const updateData = {
+  notes: 'Patient completed 45 minutes of exercise. Feeling great.'
+}
+
+const response = await fetch(
+  `http://localhost:8000/v1/records/${recordId}`,
+  {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': supabaseAnonKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(updateData)
+  }
+)
+
+const updatedRecord = await response.json()
+```
+</CodeGroup>
+
+### Response
+
+```json 200 OK
+{
+  "success": true,
+  "data": {
+    "id": "880e8400-e29b-41d4-a716-446655440004",
+    "notes": "Patient completed 45 minutes of exercise. Feeling great.",
+    "updated_at": "2026-03-06T10:15:00Z"
+  },
+  "timestamp": "2026-03-06T10:15:00Z"
+}
+```
+
+---
+
+## Delete Record
+
+Delete a nutritional record. Requires `admin` role.
+
+```bash DELETE /v1/records/{id}
+DELETE /v1/records/{id}
+```
+
+<Warning>
+  Deleting a record cannot be undone. Consider archiving instead of deleting when possible.
+</Warning>
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Record UUID
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE 'http://localhost:8000/v1/records/880e8400-e29b-41d4-a716-446655440004' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY'
+```
+
+```python Python
+record_id = '880e8400-e29b-41d4-a716-446655440004'
+
+response = requests.delete(
+    f'http://localhost:8000/v1/records/{record_id}',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key
+    }
+)
+```
+
+```javascript JavaScript
+const recordId = '880e8400-e29b-41d4-a716-446655440004'
+
+const response = await fetch(
+  `http://localhost:8000/v1/records/${recordId}`,
+  {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': supabaseAnonKey
+    }
+  }
+)
+```
+</CodeGroup>
+
+### Response
+
+```json 200 OK
+{
+  "success": true,
+  "data": {
+    "message": "Record deleted successfully",
+    "deleted_id": "880e8400-e29b-41d4-a716-446655440004"
+  },
+  "timestamp": "2026-03-06T11:00:00Z"
+}
+```
+
+---
+
+## Get Record Statistics
+
+Retrieve statistical analysis of nutritional records for a patient over a specified time period.
+
+```bash GET /v1/records/statistics
+GET /v1/records/statistics
+```
+
+### Query Parameters
+
+<ParamField query="patient_id" type="string" required>
+  Patient UUID
+</ParamField>
+
+<ParamField query="start_date" type="string" required>
+  Start date for analysis (YYYY-MM-DD)
+</ParamField>
+
+<ParamField query="end_date" type="string" required>
+  End date for analysis (YYYY-MM-DD)
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X GET 'http://localhost:8000/v1/records/statistics?patient_id=550e8400-e29b-41d4-a716-446655440000&start_date=2026-03-01&end_date=2026-03-31' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY'
+```
+
+```python Python
+params = {
+    'patient_id': '550e8400-e29b-41d4-a716-446655440000',
+    'start_date': '2026-03-01',
+    'end_date': '2026-03-31'
+}
+
+response = requests.get(
+    'http://localhost:8000/v1/records/statistics',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key
+    },
+    params=params
+)
+
+stats = response.json()
+```
+
+```javascript JavaScript
+const params = new URLSearchParams({
+  patient_id: '550e8400-e29b-41d4-a716-446655440000',
+  start_date: '2026-03-01',
+  end_date: '2026-03-31'
+})
+
+const response = await fetch(
+  `http://localhost:8000/v1/records/statistics?${params}`,
+  {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': supabaseAnonKey
+    }
+  }
+)
+
+const stats = await response.json()
+```
+</CodeGroup>
+
+### Response
+
+```json 200 OK
+{
+  "success": true,
+  "data": {
+    "period": {
+      "start": "2026-03-01",
+      "end": "2026-03-31",
+      "days": 31
+    },
+    "total_records": 28,
+    "weight": {
+      "current": 67.8,
+      "starting": 69.2,
+      "change_kg": -1.4,
+      "average": 68.5,
+      "min": 67.5,
+      "max": 69.2
+    },
+    "bmi": {
+      "current": 24.9,
+      "starting": 25.4,
+      "average": 25.2
+    },
+    "nutrition": {
+      "avg_daily_calories": 1875,
+      "avg_protein_g": 78,
+      "avg_carbohydrates_g": 215,
+      "avg_fat_g": 67,
+      "avg_fiber_g": 29,
+      "avg_water_ml": 2100
+    },
+    "activity": {
+      "sedentary_days": 2,
+      "light_days": 8,
+      "moderate_days": 12,
+      "active_days": 6,
+      "very_active_days": 0
+    },
+    "trends": {
+      "weight_trend": "decreasing",
+      "calorie_adherence": 92.5,
+      "consistency_score": 89
+    }
+  },
+  "timestamp": "2026-03-06T12:00:00Z"
+}
+```
+
+<Tip>
+  Use the statistics endpoint to generate visualizations and track patient progress over time.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Generate Reports" icon="file-chart-pie" href="/api/endpoints/reports">
+    Create PDF reports with AI-powered insights
+  </Card>
+  <Card title="Patient Management" icon="user-doctor" href="/api/endpoints/patients">
+    Manage patient profiles and information
+  </Card>
+</CardGroup>

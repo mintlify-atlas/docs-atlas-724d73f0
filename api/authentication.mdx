@@ -1,0 +1,328 @@
+---
+title: 'Authentication'
+description: 'Secure your API requests with Supabase authentication'
+---
+
+## Overview
+
+The SANL API uses Supabase Auth for authentication and authorization. All API requests must include valid authentication credentials to access protected resources.
+
+<Warning>
+  Never share your API keys or access tokens. Store them securely using environment variables.
+</Warning>
+
+## Authentication Methods
+
+SANL supports two primary authentication methods:
+
+### 1. API Key Authentication
+
+For server-to-server communication, use the Supabase anonymous key:
+
+<ParamField header="apikey" type="string" required>
+  Your Supabase anonymous key (`SUPABASE_ANON_KEY`)
+</ParamField>
+
+### 2. JWT Bearer Token Authentication
+
+For user-specific operations, use JWT tokens issued by Supabase Auth:
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token in the format: `Bearer <access_token>`
+</ParamField>
+
+## Supabase Configuration
+
+The SANL backend integrates with Supabase using the following configuration:
+
+### Environment Variables
+
+Configure these environment variables in your `.env` file:
+
+<ParamField path="SUPABASE_URL" type="string" required>
+  Your Supabase project URL
+  
+  Example: `https://abcdefghijklmnop.supabase.co`
+</ParamField>
+
+<ParamField path="SUPABASE_ANON_KEY" type="string" required>
+  Your Supabase anonymous/public API key. This key is safe to use in client applications as it works with Row Level Security (RLS).
+  
+  Example: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+</ParamField>
+
+<Info>
+  The anonymous key is designed to be used in client applications and is protected by Supabase's Row Level Security policies.
+</Info>
+
+## Authentication Flow
+
+### Step 1: User Sign In
+
+Users authenticate through the Supabase Auth service:
+
+<CodeGroup>
+```bash cURL
+curl -X POST 'https://your-project.supabase.co/auth/v1/token?grant_type=password' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "email": "user@example.com",
+    "password": "securePassword123"
+  }'
+```
+
+```python Python
+from supabase import create_client, Client
+
+supabase: Client = create_client(
+    supabase_url="YOUR_SUPABASE_URL",
+    supabase_key="YOUR_SUPABASE_ANON_KEY"
+)
+
+# Sign in
+auth_response = supabase.auth.sign_in_with_password({
+    "email": "user@example.com",
+    "password": "securePassword123"
+})
+
+access_token = auth_response.session.access_token
+```
+
+```javascript JavaScript
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  'YOUR_SUPABASE_URL',
+  'YOUR_SUPABASE_ANON_KEY'
+)
+
+// Sign in
+const { data, error } = await supabase.auth.signInWithPassword({
+  email: 'user@example.com',
+  password: 'securePassword123'
+})
+
+const accessToken = data.session.access_token
+```
+</CodeGroup>
+
+### Step 2: Include Token in Requests
+
+Include the access token in the `Authorization` header:
+
+<CodeGroup>
+```bash cURL
+curl -X GET 'http://localhost:8000/v1/patients' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY'
+```
+
+```python Python
+import requests
+
+headers = {
+    'Authorization': f'Bearer {access_token}',
+    'apikey': 'YOUR_SUPABASE_ANON_KEY',
+    'Content-Type': 'application/json'
+}
+
+response = requests.get(
+    'http://localhost:8000/v1/patients',
+    headers=headers
+)
+```
+
+```javascript JavaScript
+const response = await fetch('http://localhost:8000/v1/patients', {
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'apikey': 'YOUR_SUPABASE_ANON_KEY',
+    'Content-Type': 'application/json'
+  }
+})
+
+const data = await response.json()
+```
+</CodeGroup>
+
+## Required Headers
+
+All authenticated API requests must include these headers:
+
+<ParamField header="Authorization" type="string" required>
+  JWT access token from Supabase Auth
+  
+  Format: `Bearer <access_token>`
+</ParamField>
+
+<ParamField header="apikey" type="string" required>
+  Your Supabase anonymous key
+  
+  This enables Row Level Security policies
+</ParamField>
+
+<ParamField header="Content-Type" type="string" default="application/json">
+  Content type for request body
+  
+  Use `application/json` for JSON payloads
+</ParamField>
+
+## Token Management
+
+### Token Expiration
+
+Access tokens expire after 1 hour by default. Refresh tokens are valid for 7 days.
+
+### Refreshing Tokens
+
+<CodeGroup>
+```python Python
+# Automatic refresh with Supabase client
+supabase.auth.get_session()  # Automatically refreshes if expired
+
+# Manual refresh
+auth_response = supabase.auth.refresh_session()
+new_access_token = auth_response.session.access_token
+```
+
+```javascript JavaScript
+// Automatic refresh with Supabase client
+const { data: { session } } = await supabase.auth.getSession()
+
+// Manual refresh
+const { data, error } = await supabase.auth.refreshSession()
+const newAccessToken = data.session.access_token
+```
+</CodeGroup>
+
+## Authorization & Permissions
+
+SANL implements role-based access control (RBAC) with the following roles:
+
+### User Roles
+
+<ResponseField name="admin" type="role">
+  Full access to all resources and administrative functions
+</ResponseField>
+
+<ResponseField name="nutritionist" type="role">
+  Can create, read, and update patient records and generate reports
+</ResponseField>
+
+<ResponseField name="patient" type="role">
+  Read-only access to their own records and reports
+</ResponseField>
+
+### Row Level Security (RLS)
+
+Supabase RLS policies enforce data access rules:
+
+- Nutritionists can only access patients assigned to them
+- Patients can only view their own records
+- Admins have unrestricted access
+
+## Error Responses
+
+### 401 Unauthorized
+
+Returned when authentication credentials are missing or invalid:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Invalid or missing authentication token",
+    "details": {
+      "reason": "Token expired or malformed"
+    }
+  },
+  "timestamp": "2026-03-05T10:30:00Z"
+}
+```
+
+### 403 Forbidden
+
+Returned when the user lacks permissions for the requested operation:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "Insufficient permissions to access this resource",
+    "details": {
+      "required_role": "nutritionist",
+      "user_role": "patient"
+    }
+  },
+  "timestamp": "2026-03-05T10:30:00Z"
+}
+```
+
+## Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="Store credentials securely">
+    - Never commit API keys to version control
+    - Use environment variables for sensitive data
+    - Rotate keys regularly
+    - Use different keys for development and production
+  </Accordion>
+  
+  <Accordion title="Implement token refresh">
+    - Handle token expiration gracefully
+    - Implement automatic token refresh logic
+    - Store refresh tokens securely
+    - Clear tokens on user logout
+  </Accordion>
+  
+  <Accordion title="Use HTTPS in production">
+    - Always use HTTPS for API requests in production
+    - Enable HSTS headers
+    - Validate SSL certificates
+    - Avoid exposing tokens in URLs
+  </Accordion>
+  
+  <Accordion title="Monitor authentication failures">
+    - Log authentication attempts
+    - Set up alerts for suspicious activity
+    - Implement rate limiting
+    - Use Supabase Auth webhooks for monitoring
+  </Accordion>
+</AccordionGroup>
+
+## Testing Authentication
+
+Test your authentication setup:
+
+<CodeGroup>
+```bash Verify Token
+curl -X GET 'https://your-project.supabase.co/auth/v1/user' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY'
+```
+
+```bash Test API Endpoint
+curl -X GET 'http://localhost:8000/v1/patients' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY' \
+  -H 'Content-Type: application/json'
+```
+</CodeGroup>
+
+<Tip>
+  Use the FastAPI interactive docs at `/docs` to test authentication with the "Authorize" button.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Manage Patients" icon="users" href="/api/endpoints/patients">
+    Start making authenticated requests to the Patients API
+  </Card>
+  <Card title="Setup Guide" icon="gear" href="/setup/environment">
+    Configure your environment variables
+  </Card>
+</CardGroup>

@@ -1,0 +1,518 @@
+---
+title: AI Integration
+description: Configure Google Gemini 1.5 Flash for nutritional analysis in SANL
+---
+
+SANL leverages Google Gemini 1.5 Flash AI model to provide intelligent nutritional analysis, dietary recommendations, and patient assessment insights.
+
+## Overview
+
+The AI integration enables:
+
+<CardGroup cols={2}>
+  <Card title="Nutritional Analysis" icon="apple-whole">
+    Automated analysis of dietary intake and nutritional deficiencies based on patient data.
+  </Card>
+  
+  <Card title="Personalized Recommendations" icon="user-doctor">
+    AI-generated dietary recommendations tailored to individual patient needs and medical conditions.
+  </Card>
+  
+  <Card title="Medical Insights" icon="brain">
+    Intelligent interpretation of nutritional assessments to support clinical decision-making.
+  </Card>
+  
+  <Card title="Report Generation" icon="file-medical">
+    Automated generation of comprehensive nutritional reports with evidence-based insights.
+  </Card>
+</CardGroup>
+
+## Prerequisites
+
+Before configuring AI integration:
+
+- Completed [Environment Configuration](/setup/environment) with `GEMINI_API_KEY`
+- Python backend with `google-generativeai` package installed
+- Basic understanding of AI prompting for healthcare applications
+
+## Google Gemini 1.5 Flash
+
+### Why Gemini 1.5 Flash?
+
+Gemini 1.5 Flash is selected for SANL based on:
+
+- **Speed:** Fast inference for real-time nutritional analysis
+- **Cost-effectiveness:** Optimized pricing for production deployment
+- **Quality:** High-quality responses for medical and nutritional contexts
+- **Context window:** Large context for processing comprehensive patient data
+- **Multimodal:** Support for text and future image-based dietary analysis
+
+### Model Specifications
+
+| Feature | Specification |
+|---------|---------------|
+| Model Name | `gemini-1.5-flash` |
+| Max Input Tokens | 1,048,576 |
+| Max Output Tokens | 8,192 |
+| Supported Languages | 100+ including Spanish (primary for SANL) |
+| Rate Limits | 15 RPM (free tier), higher for paid plans |
+
+## Getting Your API Key
+
+<Steps>
+  <Step title="Access Google AI Studio">
+    Visit [Google AI Studio](https://makersuite.google.com/app/apikey) and sign in with your Google account.
+  </Step>
+
+  <Step title="Create an API key">
+    1. Click "Create API Key"
+    2. Select your Google Cloud project (or create a new one)
+    3. Copy the generated API key
+    4. Store it securely
+    
+    <Warning>
+      Save your API key immediately. You won't be able to view it again after closing the dialog.
+    </Warning>
+  </Step>
+
+  <Step title="Add to environment variables">
+    Add your API key to `backend/.env`:
+    
+    ```bash
+    GEMINI_API_KEY=AIzaSyB1234567890abcdefghijklmnopqrstu
+    ```
+  </Step>
+
+  <Step title="Verify installation">
+    Ensure the `google-generativeai` package is installed:
+    
+    ```bash
+    pip install google-generativeai
+    ```
+  </Step>
+</Steps>
+
+## Python Integration
+
+### Basic Setup
+
+Initialize the Gemini client in your FastAPI backend:
+
+```python
+import google.generativeai as genai
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Configure Gemini API
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# Initialize the model
+model = genai.GenerativeModel('gemini-1.5-flash')
+```
+
+### Making API Calls
+
+<CodeGroup>
+  ```python Simple Query
+  # Generate nutritional analysis
+  response = model.generate_content(
+      "Analyze the nutritional status of a patient with the following data: "
+      "Height: 170cm, Weight: 75kg, Age: 35, Gender: Male"
+  )
+  
+  print(response.text)
+  ```
+
+  ```python Structured Prompt
+  # Create a detailed nutritional assessment
+  prompt = f"""
+  You are a nutritional expert analyzing patient data.
+  
+  Patient Information:
+  - Name: {patient_name}
+  - Age: {age}
+  - Height: {height_cm}cm
+  - Weight: {weight_kg}kg
+  - BMI: {bmi}
+  - Medical Conditions: {conditions}
+  
+  Daily Dietary Intake:
+  {dietary_intake}
+  
+  Provide:
+  1. Nutritional status assessment
+  2. Deficiencies or excesses
+  3. Specific dietary recommendations
+  4. Meal planning suggestions
+  """
+  
+  response = model.generate_content(prompt)
+  analysis = response.text
+  ```
+
+  ```python With Safety Settings
+  # Configure safety settings for medical context
+  from google.generativeai.types import HarmCategory, HarmBlockThreshold
+  
+  safety_settings = {
+      HarmCategory.HARM_CATEGORY_MEDICAL: HarmBlockThreshold.BLOCK_NONE,
+      HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+  }
+  
+  response = model.generate_content(
+      prompt,
+      safety_settings=safety_settings
+  )
+  ```
+
+  ```python Async API Calls
+  # For better performance in FastAPI
+  import asyncio
+  
+  async def generate_analysis(patient_data):
+      # Use async version for non-blocking calls
+      response = await model.generate_content_async(prompt)
+      return response.text
+  ```
+</CodeGroup>
+
+## Integration with FastAPI
+
+Create an endpoint for nutritional analysis:
+
+```python
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import google.generativeai as genai
+
+app = FastAPI()
+
+# Configure Gemini
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+class NutritionalAssessment(BaseModel):
+    patient_id: str
+    height_cm: float
+    weight_kg: float
+    age: int
+    dietary_intake: dict
+    medical_conditions: list[str] = []
+
+@app.post("/api/analyze-nutrition")
+async def analyze_nutrition(assessment: NutritionalAssessment):
+    try:
+        # Calculate BMI
+        bmi = assessment.weight_kg / ((assessment.height_cm / 100) ** 2)
+        
+        # Create prompt
+        prompt = f"""
+        Analyze the following nutritional data:
+        
+        Patient: {assessment.patient_id}
+        Age: {assessment.age}
+        Height: {assessment.height_cm}cm
+        Weight: {assessment.weight_kg}kg
+        BMI: {bmi:.2f}
+        Medical Conditions: {', '.join(assessment.medical_conditions)}
+        
+        Dietary Intake:
+        {assessment.dietary_intake}
+        
+        Provide a comprehensive nutritional analysis with recommendations.
+        """
+        
+        # Generate analysis
+        response = model.generate_content(prompt)
+        
+        return {
+            "patient_id": assessment.patient_id,
+            "bmi": round(bmi, 2),
+            "analysis": response.text,
+            "model_version": "gemini-1.5-flash"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI analysis failed: {str(e)}")
+```
+
+## Prompt Engineering for SANL
+
+### Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Be Specific" icon="bullseye">
+    Provide detailed patient context, medical history, and specific questions for accurate analysis.
+  </Card>
+  
+  <Card title="Use Structured Formats" icon="list">
+    Request responses in structured formats (JSON, numbered lists) for easier parsing.
+  </Card>
+  
+  <Card title="Set Clear Constraints" icon="ruler">
+    Define boundaries like dietary restrictions, cultural preferences, and medical limitations.
+  </Card>
+  
+  <Card title="Request Evidence" icon="book-medical">
+    Ask for evidence-based recommendations with nutritional science backing.
+  </Card>
+</CardGroup>
+
+### Sample Prompts
+
+<CodeGroup>
+  ```text Nutritional Assessment
+  You are a clinical nutritionist. Analyze this patient data and provide:
+  
+  1. Current nutritional status (underweight/normal/overweight/obese)
+  2. Estimated daily caloric needs
+  3. Macronutrient distribution (proteins, carbs, fats)
+  4. Micronutrient deficiencies based on dietary intake
+  5. Top 3 dietary recommendations
+  
+  Patient: [details]
+  Format your response as JSON.
+  ```
+
+  ```text Meal Planning
+  Create a 7-day meal plan for:
+  - Age: 45, Female
+  - Goal: Weight loss (current: 80kg, target: 70kg)
+  - Dietary restrictions: Vegetarian, lactose intolerant
+  - Activity level: Moderate (3x/week exercise)
+  - Budget: Moderate
+  - Cultural preference: Latin American cuisine
+  
+  Provide breakfast, lunch, dinner, and 2 snacks per day with calorie counts.
+  ```
+
+  ```text Risk Assessment
+  Based on this nutritional assessment, evaluate:
+  1. Risk of malnutrition (low/medium/high)
+  2. Risk factors present
+  3. Early warning signs identified
+  4. Immediate interventions needed
+  5. Follow-up recommendations
+  
+  Assessment data: [details]
+  ```
+</CodeGroup>
+
+## Response Handling
+
+### Parsing AI Responses
+
+```python
+import json
+import re
+
+def parse_gemini_response(response_text: str) -> dict:
+    """
+    Parse Gemini response into structured data
+    """
+    try:
+        # Try to extract JSON if present
+        json_match = re.search(r'```json\n(.+?)\n```', response_text, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group(1))
+        
+        # Otherwise return as text with metadata
+        return {
+            "analysis": response_text,
+            "format": "text"
+        }
+    except Exception as e:
+        return {
+            "analysis": response_text,
+            "format": "text",
+            "parse_error": str(e)
+        }
+```
+
+### Error Handling
+
+```python
+from google.api_core import exceptions
+
+try:
+    response = model.generate_content(prompt)
+except exceptions.ResourceExhausted:
+    # Rate limit exceeded
+    raise HTTPException(status_code=429, detail="AI service rate limit exceeded")
+except exceptions.InvalidArgument:
+    # Invalid prompt or parameters
+    raise HTTPException(status_code=400, detail="Invalid request to AI service")
+except exceptions.PermissionDenied:
+    # API key invalid or expired
+    raise HTTPException(status_code=401, detail="AI service authentication failed")
+except Exception as e:
+    # General error
+    raise HTTPException(status_code=500, detail=f"AI analysis failed: {str(e)}")
+```
+
+## Rate Limits and Quotas
+
+<Warning>
+  **Free Tier Limitations:**
+  
+  - 15 requests per minute (RPM)
+  - 1,500 requests per day (RPD)
+  - 1 million tokens per minute (TPM)
+  
+  For production deployment, consider upgrading to a paid plan with higher limits.
+</Warning>
+
+### Implementing Rate Limiting
+
+```python
+from time import time
+from collections import deque
+
+class RateLimiter:
+    def __init__(self, max_requests=15, time_window=60):
+        self.max_requests = max_requests
+        self.time_window = time_window
+        self.requests = deque()
+    
+    def is_allowed(self) -> bool:
+        now = time()
+        
+        # Remove old requests outside time window
+        while self.requests and self.requests[0] < now - self.time_window:
+            self.requests.popleft()
+        
+        # Check if under limit
+        if len(self.requests) < self.max_requests:
+            self.requests.append(now)
+            return True
+        
+        return False
+
+# Usage
+rate_limiter = RateLimiter()
+
+if not rate_limiter.is_allowed():
+    raise HTTPException(status_code=429, detail="Rate limit exceeded. Please try again later.")
+```
+
+## Monitoring and Logging
+
+### Track AI Usage
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+def log_ai_request(patient_id: str, prompt: str, response: str, duration: float):
+    """
+    Log AI requests for monitoring and audit
+    """
+    logger.info(f"AI Request: patient={patient_id}, duration={duration}s")
+    
+    # Store in database for analytics
+    supabase.table("ai_analysis").insert({
+        "patient_id": patient_id,
+        "prompt_sent": prompt,
+        "ai_response": {"text": response},
+        "model_version": "gemini-1.5-flash",
+        "processing_time": duration
+    }).execute()
+```
+
+## Security and Privacy
+
+<Warning>
+  **HIPAA Compliance Considerations:**
+  
+  1. **Data Anonymization:** Remove or hash personally identifiable information (PII) before sending to AI
+  2. **Audit Logging:** Log all AI interactions for compliance auditing
+  3. **Data Retention:** Understand Google's data retention policies for AI requests
+  4. **Consent:** Obtain patient consent for AI-assisted analysis
+  5. **Review AI Outputs:** Always have medical professionals review AI-generated recommendations
+</Warning>
+
+### Anonymizing Patient Data
+
+```python
+import hashlib
+
+def anonymize_patient_data(patient_data: dict) -> dict:
+    """
+    Remove PII before sending to AI
+    """
+    # Hash patient ID
+    patient_id_hash = hashlib.sha256(
+        patient_data["patient_id"].encode()
+    ).hexdigest()[:16]
+    
+    return {
+        "patient_id": patient_id_hash,
+        "age": patient_data["age"],
+        "height_cm": patient_data["height_cm"],
+        "weight_kg": patient_data["weight_kg"],
+        "medical_conditions": patient_data["medical_conditions"],
+        "dietary_intake": patient_data["dietary_intake"]
+        # Exclude: name, DOB, contact info, medical record number
+    }
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="API key authentication failures">
+    **Symptoms:** 401 errors or "API key not valid"
+    
+    **Solutions:**
+    1. Verify `GEMINI_API_KEY` is set correctly in `.env`
+    2. Check the key hasn't been revoked in Google AI Studio
+    3. Ensure no extra whitespace in the key
+    4. Restart the backend server after updating the key
+  </Accordion>
+
+  <Accordion title="Rate limit exceeded errors">
+    **Symptoms:** 429 errors or "Resource exhausted"
+    
+    **Solutions:**
+    1. Implement rate limiting in your application
+    2. Cache common AI responses
+    3. Batch similar requests together
+    4. Consider upgrading to a paid plan
+    5. Use exponential backoff for retries
+  </Accordion>
+
+  <Accordion title="Poor quality AI responses">
+    **Symptoms:** Irrelevant or inaccurate nutritional advice
+    
+    **Solutions:**
+    1. Improve prompt engineering with more context
+    2. Add examples of desired output format
+    3. Set temperature parameter lower for more deterministic responses
+    4. Include relevant medical guidelines in the prompt
+    5. Implement human review workflow
+  </Accordion>
+
+  <Accordion title="Slow response times">
+    **Symptoms:** API calls taking too long
+    
+    **Solutions:**
+    1. Use async/await for non-blocking calls
+    2. Implement timeout limits
+    3. Reduce prompt size and complexity
+    4. Cache frequent analyses
+    5. Consider streaming responses for large outputs
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+After configuring AI integration:
+
+1. Test the integration with sample patient data
+2. Implement prompt templates for different analysis types
+3. Set up monitoring and alerting for AI service health
+4. Create human-in-the-loop review workflows
+5. Train your team on interpreting AI-generated insights

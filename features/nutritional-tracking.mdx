@@ -1,0 +1,338 @@
+---
+title: 'Nutritional Tracking'
+description: 'Real-time patient nutrition monitoring with comprehensive intake and analysis capabilities'
+icon: 'chart-line'
+---
+
+## Overview
+
+SANL's nutritional tracking system enables healthcare providers to monitor patient dietary intake, macronutrient distribution, and nutritional goals in real-time. The system integrates with clinical records and AI analysis to provide comprehensive nutritional insights.
+
+<Note>
+All nutritional data is synchronized in real-time through Supabase, ensuring providers always have access to the latest patient information.
+</Note>
+
+## Core Capabilities
+
+<CardGroup cols={2}>
+  <Card title="Daily Intake Logging" icon="utensils">
+    Track meals, snacks, and beverages with detailed nutritional breakdowns
+  </Card>
+  <Card title="Macro Analysis" icon="chart-pie">
+    Monitor protein, carbohydrates, fats, and micronutrient intake
+  </Card>
+  <Card title="Goal Tracking" icon="bullseye">
+    Set and monitor personalized nutritional goals
+  </Card>
+  <Card title="Trend Analysis" icon="chart-line">
+    Visualize nutritional trends over time with historical data
+  </Card>
+</CardGroup>
+
+## Architecture
+
+The nutritional tracking system is built on a robust API layer:
+
+- **FastAPI Backend**: High-performance async endpoints for real-time data processing
+- **Supabase Storage**: Persistent storage with relational integrity
+- **Real-time Updates**: Instant synchronization across devices
+- **Data Validation**: Comprehensive validation using Pydantic models
+
+## API Endpoints
+
+### Logging Nutritional Intake
+
+<Tabs>
+  <Tab title="Patient Interface">
+    ### Log a Meal
+
+    Patients can log their daily nutritional intake:
+
+    ```python
+    from fastapi import APIRouter, HTTPException
+    from pydantic import BaseModel, Field
+    from datetime import datetime
+    from typing import Optional
+
+    router = APIRouter()
+
+    class NutritionalIntake(BaseModel):
+        patient_id: str
+        meal_type: str  # breakfast, lunch, dinner, snack
+        food_items: list[dict]
+        total_calories: float = Field(gt=0)
+        macros: dict  # protein, carbs, fats in grams
+        micronutrients: Optional[dict] = None
+        meal_time: datetime
+        notes: Optional[str] = None
+
+    @router.post("/api/nutrition/intake")
+    async def log_intake(intake: NutritionalIntake):
+        try:
+            # Store in Supabase
+            result = supabase.table("nutritional_intake").insert({
+                "patient_id": intake.patient_id,
+                "meal_type": intake.meal_type,
+                "food_items": intake.food_items,
+                "total_calories": intake.total_calories,
+                "macros": intake.macros,
+                "micronutrients": intake.micronutrients,
+                "meal_time": intake.meal_time.isoformat(),
+                "notes": intake.notes,
+                "logged_at": datetime.utcnow().isoformat()
+            }).execute()
+            
+            return {
+                "success": True,
+                "intake_id": result.data[0]["id"],
+                "message": "Meal logged successfully"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    ```
+
+    ### View Daily Summary
+
+    ```python
+    @router.get("/api/nutrition/daily-summary")
+    async def get_daily_summary(patient_id: str, date: str):
+        # Get all intake for a specific day
+        intake = supabase.table("nutritional_intake") \
+            .select("*") \
+            .eq("patient_id", patient_id) \
+            .gte("meal_time", f"{date}T00:00:00") \
+            .lt("meal_time", f"{date}T23:59:59") \
+            .execute()
+        
+        # Calculate totals
+        total_calories = sum(item["total_calories"] for item in intake.data)
+        total_protein = sum(item["macros"].get("protein", 0) for item in intake.data)
+        total_carbs = sum(item["macros"].get("carbs", 0) for item in intake.data)
+        total_fats = sum(item["macros"].get("fats", 0) for item in intake.data)
+        
+        return {
+            "date": date,
+            "meals": intake.data,
+            "summary": {
+                "total_calories": total_calories,
+                "total_protein": total_protein,
+                "total_carbs": total_carbs,
+                "total_fats": total_fats
+            }
+        }
+    ```
+  </Tab>
+
+  <Tab title="Provider Interface">
+    ### Monitor Patient Nutrition
+
+    Healthcare providers can monitor multiple patients:
+
+    ```python
+    @router.get("/api/nutrition/patient/{patient_id}/overview")
+    async def get_patient_nutrition_overview(patient_id: str, days: int = 7):
+        from datetime import timedelta
+        
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=days)
+        
+        # Fetch nutritional data for the period
+        intake = supabase.table("nutritional_intake") \
+            .select("*") \
+            .eq("patient_id", patient_id) \
+            .gte("meal_time", start_date.isoformat()) \
+            .lte("meal_time", end_date.isoformat()) \
+            .order("meal_time", desc=True) \
+            .execute()
+        
+        # Calculate averages
+        if intake.data:
+            avg_calories = sum(item["total_calories"] for item in intake.data) / len(intake.data)
+            avg_protein = sum(item["macros"].get("protein", 0) for item in intake.data) / len(intake.data)
+        else:
+            avg_calories = avg_protein = 0
+        
+        return {
+            "patient_id": patient_id,
+            "period": {"days": days, "start": start_date, "end": end_date},
+            "averages": {
+                "calories": round(avg_calories, 2),
+                "protein": round(avg_protein, 2)
+            },
+            "compliance_rate": len(intake.data) / (days * 3) * 100  # Assuming 3 meals/day
+        }
+    ```
+
+    ### Set Nutritional Goals
+
+    ```python
+    class NutritionalGoals(BaseModel):
+        patient_id: str
+        daily_calories: float
+        daily_protein: float
+        daily_carbs: float
+        daily_fats: float
+        special_requirements: Optional[list[str]] = None
+
+    @router.post("/api/nutrition/goals")
+    async def set_nutritional_goals(goals: NutritionalGoals):
+        result = supabase.table("nutritional_goals").upsert({
+            "patient_id": goals.patient_id,
+            "daily_calories": goals.daily_calories,
+            "daily_protein": goals.daily_protein,
+            "daily_carbs": goals.daily_carbs,
+            "daily_fats": goals.daily_fats,
+            "special_requirements": goals.special_requirements,
+            "updated_at": datetime.utcnow().isoformat()
+        }).execute()
+        
+        return {"success": True, "goals": result.data}
+    ```
+  </Tab>
+</Tabs>
+
+## Data Models
+
+### Nutritional Intake Structure
+
+```python
+from pydantic import BaseModel, Field
+from datetime import datetime
+from typing import Optional, List
+
+class FoodItem(BaseModel):
+    name: str
+    portion_size: float
+    unit: str  # grams, ml, cups, etc.
+    calories: float
+    protein: float
+    carbs: float
+    fats: float
+
+class MacroNutrients(BaseModel):
+    protein: float = Field(ge=0, description="Protein in grams")
+    carbs: float = Field(ge=0, description="Carbohydrates in grams")
+    fats: float = Field(ge=0, description="Fats in grams")
+    fiber: Optional[float] = Field(None, ge=0)
+
+class MicroNutrients(BaseModel):
+    vitamin_a: Optional[float] = None
+    vitamin_c: Optional[float] = None
+    vitamin_d: Optional[float] = None
+    calcium: Optional[float] = None
+    iron: Optional[float] = None
+    sodium: Optional[float] = None
+    potassium: Optional[float] = None
+```
+
+## Database Schema
+
+```sql
+CREATE TABLE nutritional_intake (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  patient_id UUID REFERENCES auth.users(id),
+  meal_type VARCHAR(50) NOT NULL,
+  food_items JSONB NOT NULL,
+  total_calories DECIMAL(10, 2) NOT NULL,
+  macros JSONB NOT NULL,
+  micronutrients JSONB,
+  meal_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  notes TEXT,
+  logged_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE nutritional_goals (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  patient_id UUID REFERENCES auth.users(id) UNIQUE,
+  daily_calories DECIMAL(10, 2) NOT NULL,
+  daily_protein DECIMAL(10, 2) NOT NULL,
+  daily_carbs DECIMAL(10, 2) NOT NULL,
+  daily_fats DECIMAL(10, 2) NOT NULL,
+  special_requirements JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for better query performance
+CREATE INDEX idx_intake_patient_time ON nutritional_intake(patient_id, meal_time DESC);
+CREATE INDEX idx_goals_patient ON nutritional_goals(patient_id);
+```
+
+## Advanced Features
+
+### Trend Analysis
+
+```python
+@router.get("/api/nutrition/trends/{patient_id}")
+async def get_nutrition_trends(patient_id: str, days: int = 30):
+    from datetime import timedelta
+    
+    end_date = datetime.utcnow()
+    start_date = end_date - timedelta(days=days)
+    
+    intake = supabase.table("nutritional_intake") \
+        .select("meal_time, total_calories, macros") \
+        .eq("patient_id", patient_id) \
+        .gte("meal_time", start_date.isoformat()) \
+        .order("meal_time") \
+        .execute()
+    
+    # Group by day
+    daily_trends = {}
+    for item in intake.data:
+        day = item["meal_time"][:10]
+        if day not in daily_trends:
+            daily_trends[day] = {"calories": 0, "protein": 0, "carbs": 0, "fats": 0}
+        
+        daily_trends[day]["calories"] += item["total_calories"]
+        daily_trends[day]["protein"] += item["macros"].get("protein", 0)
+        daily_trends[day]["carbs"] += item["macros"].get("carbs", 0)
+        daily_trends[day]["fats"] += item["macros"].get("fats", 0)
+    
+    return {"period": days, "trends": daily_trends}
+```
+
+## Best Practices
+
+<Tip>
+Encourage patients to log meals immediately after eating for more accurate tracking and better adherence.
+</Tip>
+
+- **Consistent Logging**: Implement reminders for patients to log meals regularly
+- **Portion Accuracy**: Provide portion size guides and visual references
+- **Data Validation**: Validate nutritional values against standard databases
+- **Privacy**: Use RLS policies to ensure patients can only access their own data
+- **Performance**: Use database indexes for frequently queried date ranges
+
+<Info>
+Integrate with food databases like USDA FoodData Central for accurate nutritional information.
+</Info>
+
+## Integration with Other Features
+
+Nutritional tracking data feeds into:
+
+- **AI Insights**: Provides data for intelligent nutritional recommendations
+- **PDF Reports**: Generates comprehensive nutritional summaries
+- **Clinical Records**: Maintains historical nutritional status
+
+## Dependencies
+
+```txt
+fastapi
+uvicorn
+supabase
+python-dotenv
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="AI Insights" icon="brain" href="/features/ai-insights">
+    Generate intelligent recommendations from nutritional data
+  </Card>
+  <Card title="PDF Reports" icon="file-pdf" href="/features/pdf-reports">
+    Create comprehensive nutritional reports
+  </Card>
+</CardGroup>

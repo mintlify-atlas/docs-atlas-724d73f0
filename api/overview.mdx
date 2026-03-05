@@ -1,0 +1,200 @@
+---
+title: 'API Overview'
+description: 'Complete guide to the SANL REST API for nutritional monitoring'
+---
+
+## Introduction
+
+The SANL API is a RESTful service built with FastAPI that provides programmatic access to patient records, nutritional tracking data, and AI-powered health insights. The API enables healthcare professionals to integrate SANL's nutritional monitoring capabilities into their existing workflows.
+
+<Info>
+  The SANL API uses standard HTTP methods, returns JSON responses, and follows RESTful design principles.
+</Info>
+
+## Architecture
+
+The SANL backend is built using:
+
+- **FastAPI**: High-performance Python web framework with automatic API documentation
+- **Supabase**: Backend-as-a-service providing PostgreSQL database and authentication
+- **Google Gemini AI**: AI-powered nutritional insights and recommendations
+- **FPDF2**: PDF generation for nutritional reports
+
+### Key Components
+
+<CardGroup cols={2}>
+  <Card title="Database" icon="database">
+    PostgreSQL database managed by Supabase with real-time subscriptions and row-level security
+  </Card>
+  <Card title="Authentication" icon="shield">
+    Supabase Auth with JWT tokens for secure API access
+  </Card>
+  <Card title="AI Integration" icon="brain">
+    Google Gemini 1.5 Flash for intelligent nutritional analysis and recommendations
+  </Card>
+  <Card title="Report Generation" icon="file-pdf">
+    Automated PDF report generation with FPDF2 for patient documentation
+  </Card>
+</CardGroup>
+
+## Base URL
+
+All API requests are made to the following base URL:
+
+```bash
+https://api.sanl.example.com/v1
+```
+
+<Note>
+  Replace `api.sanl.example.com` with your actual API endpoint when deploying to production.
+</Note>
+
+For local development:
+
+```bash
+http://localhost:8000/v1
+```
+
+## API Versioning
+
+The SANL API uses URL-based versioning. The current version is `v1`. Version identifiers are included in the URL path:
+
+- Current version: `/v1/`
+- Future versions will increment: `/v2/`, `/v3/`, etc.
+
+## Response Format
+
+All API responses follow a consistent JSON structure:
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "data": {
+    // Response data
+  },
+  "timestamp": "2026-03-05T10:30:00Z"
+}
+```
+
+### Error Response
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RESOURCE_NOT_FOUND",
+    "message": "The requested patient record was not found",
+    "details": {}
+  },
+  "timestamp": "2026-03-05T10:30:00Z"
+}
+```
+
+## HTTP Status Codes
+
+The API uses standard HTTP status codes:
+
+| Status Code | Description |
+|------------|-------------|
+| `200 OK` | Request succeeded |
+| `201 Created` | Resource created successfully |
+| `400 Bad Request` | Invalid request parameters |
+| `401 Unauthorized` | Missing or invalid authentication |
+| `403 Forbidden` | Insufficient permissions |
+| `404 Not Found` | Resource not found |
+| `422 Unprocessable Entity` | Validation error |
+| `500 Internal Server Error` | Server error |
+
+## Rate Limiting
+
+API requests are rate limited to ensure service stability:
+
+- **Free tier**: 100 requests per minute
+- **Professional tier**: 1,000 requests per minute
+- **Enterprise tier**: Custom limits
+
+Rate limit information is included in response headers:
+
+```bash
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1709635800
+```
+
+## API Endpoints
+
+The SANL API is organized into the following resource categories:
+
+<CardGroup cols={2}>
+  <Card 
+    title="Patients" 
+    icon="user" 
+    href="/api/endpoints/patients"
+  >
+    Manage patient profiles, demographic information, and medical history
+  </Card>
+  <Card 
+    title="Records" 
+    icon="notes-medical" 
+    href="/api/endpoints/records"
+  >
+    Create and retrieve nutritional records, measurements, and dietary logs
+  </Card>
+  <Card 
+    title="Reports" 
+    icon="file-chart-column" 
+    href="/api/endpoints/reports"
+  >
+    Generate PDF reports and access AI-powered nutritional insights
+  </Card>
+  <Card 
+    title="Authentication" 
+    icon="key" 
+    href="/api/authentication"
+  >
+    Authenticate users and manage API access tokens
+  </Card>
+</CardGroup>
+
+## Interactive Documentation
+
+FastAPI provides automatic interactive API documentation:
+
+- **Swagger UI**: Available at `/docs`
+- **ReDoc**: Available at `/redoc`
+
+These interactive interfaces allow you to explore endpoints, test requests, and view response schemas directly in your browser.
+
+<Tip>
+  Visit `http://localhost:8000/docs` during development to access the interactive API explorer.
+</Tip>
+
+## SDK & Client Libraries
+
+Official client libraries are available for popular languages:
+
+```bash Python
+pip install sanl-api-client
+```
+
+```bash JavaScript
+npm install @sanl/api-client
+```
+
+```bash TypeScript
+npm install @sanl/api-client
+yarn add @sanl/api-client
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="lock" href="/api/authentication">
+    Learn how to authenticate your API requests
+  </Card>
+  <Card title="Patient Management" icon="user-doctor" href="/api/endpoints/patients">
+    Start managing patient records
+  </Card>
+</CardGroup>

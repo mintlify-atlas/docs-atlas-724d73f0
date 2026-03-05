@@ -1,0 +1,834 @@
+---
+title: 'Reports'
+description: 'Generate PDF reports and access AI-powered nutritional insights'
+---
+
+## Overview
+
+The Reports API enables you to generate comprehensive PDF reports and access AI-powered nutritional insights using Google Gemini AI. Reports combine patient data, nutritional records, and intelligent analysis to provide actionable recommendations.
+
+<Info>
+  SANL uses Google Gemini 1.5 Flash for generating personalized nutritional insights and recommendations.
+</Info>
+
+## Report Object
+
+A report represents a generated document containing nutritional analysis and recommendations.
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the report (UUID)
+</ResponseField>
+
+<ResponseField name="patient_id" type="string" required>
+  ID of the associated patient
+</ResponseField>
+
+<ResponseField name="type" type="string" required>
+  Type of report
+  
+  Options: `progress`, `summary`, `consultation`, `full_analysis`
+</ResponseField>
+
+<ResponseField name="period" type="object" required>
+  Time period covered by the report
+  
+  <Expandable title="Period Object">
+    <ResponseField name="start_date" type="string" required>
+      Start date (ISO 8601)
+    </ResponseField>
+    <ResponseField name="end_date" type="string" required>
+      End date (ISO 8601)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="status" type="string" required>
+  Report generation status
+  
+  Options: `pending`, `processing`, `completed`, `failed`
+</ResponseField>
+
+<ResponseField name="pdf_url" type="string">
+  URL to download the generated PDF report
+  
+  Available when status is `completed`
+</ResponseField>
+
+<ResponseField name="ai_insights" type="object">
+  AI-generated insights and recommendations
+  
+  <Expandable title="AI Insights Object">
+    <ResponseField name="summary" type="string">
+      Overall summary of nutritional status
+    </ResponseField>
+    <ResponseField name="achievements" type="array">
+      List of positive achievements
+    </ResponseField>
+    <ResponseField name="recommendations" type="array">
+      AI-generated recommendations
+    </ResponseField>
+    <ResponseField name="risk_factors" type="array">
+      Identified health risk factors
+    </ResponseField>
+    <ResponseField name="dietary_suggestions" type="array">
+      Specific dietary suggestions
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="data_summary" type="object">
+  Statistical summary of the report period
+</ResponseField>
+
+<ResponseField name="created_by" type="string">
+  ID of the user who generated the report
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  Timestamp when the report was created (ISO 8601)
+</ResponseField>
+
+<ResponseField name="completed_at" type="string">
+  Timestamp when report generation completed (ISO 8601)
+</ResponseField>
+
+### Example Report Object
+
+```json
+{
+  "id": "990e8400-e29b-41d4-a716-446655440005",
+  "patient_id": "550e8400-e29b-41d4-a716-446655440000",
+  "type": "progress",
+  "period": {
+    "start_date": "2026-02-01",
+    "end_date": "2026-02-28"
+  },
+  "status": "completed",
+  "pdf_url": "https://storage.sanl.example.com/reports/990e8400.pdf",
+  "ai_insights": {
+    "summary": "Patient shows consistent progress with a 1.4kg weight reduction while maintaining balanced nutrition. Exercise compliance has improved significantly.",
+    "achievements": [
+      "Maintained caloric intake within target range (1800-2000 kcal)",
+      "Increased physical activity to 4-5 days per week",
+      "Improved blood glucose control (avg: 95 mg/dL)"
+    ],
+    "recommendations": [
+      "Continue current meal plan with emphasis on high-fiber foods",
+      "Gradually increase protein intake to 85-90g daily",
+      "Monitor sodium intake, currently slightly elevated"
+    ],
+    "risk_factors": [
+      "Occasional blood pressure spikes (>130/85)",
+      "Low water intake on weekends"
+    ],
+    "dietary_suggestions": [
+      "Add more leafy greens to lunch and dinner",
+      "Replace processed snacks with nuts and fruits",
+      "Increase water consumption to 2.5L daily"
+    ]
+  },
+  "data_summary": {
+    "total_records": 26,
+    "weight_change_kg": -1.4,
+    "avg_daily_calories": 1875,
+    "adherence_score": 92
+  },
+  "created_by": "750e8400-e29b-41d4-a716-446655440001",
+  "created_at": "2026-03-01T10:00:00Z",
+  "completed_at": "2026-03-01T10:02:30Z"
+}
+```
+
+---
+
+## List Reports
+
+Retrieve a list of generated reports.
+
+```bash GET /v1/reports
+GET /v1/reports
+```
+
+### Query Parameters
+
+<ParamField query="patient_id" type="string">
+  Filter reports by patient ID
+</ParamField>
+
+<ParamField query="type" type="string">
+  Filter by report type: `progress`, `summary`, `consultation`, `full_analysis`
+</ParamField>
+
+<ParamField query="status" type="string">
+  Filter by status: `pending`, `processing`, `completed`, `failed`
+</ParamField>
+
+<ParamField query="page" type="integer" default="1">
+  Page number for pagination
+</ParamField>
+
+<ParamField query="limit" type="integer" default="20">
+  Number of results per page (max: 100)
+</ParamField>
+
+<ParamField query="sort" type="string" default="created_at">
+  Sort field: `created_at`, `completed_at`
+</ParamField>
+
+<ParamField query="order" type="string" default="desc">
+  Sort order: `asc`, `desc`
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X GET 'http://localhost:8000/v1/reports?patient_id=550e8400-e29b-41d4-a716-446655440000&status=completed' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY'
+```
+
+```python Python
+import requests
+
+params = {
+    'patient_id': '550e8400-e29b-41d4-a716-446655440000',
+    'status': 'completed',
+    'page': 1,
+    'limit': 10
+}
+
+response = requests.get(
+    'http://localhost:8000/v1/reports',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key
+    },
+    params=params
+)
+
+reports = response.json()
+```
+
+```javascript JavaScript
+const params = new URLSearchParams({
+  patient_id: '550e8400-e29b-41d4-a716-446655440000',
+  status: 'completed',
+  page: 1,
+  limit: 10
+})
+
+const response = await fetch(
+  `http://localhost:8000/v1/reports?${params}`,
+  {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': supabaseAnonKey
+    }
+  }
+)
+
+const reports = await response.json()
+```
+</CodeGroup>
+
+### Response
+
+```json 200 OK
+{
+  "success": true,
+  "data": {
+    "reports": [
+      {
+        "id": "990e8400-e29b-41d4-a716-446655440005",
+        "patient_id": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "progress",
+        "period": {
+          "start_date": "2026-02-01",
+          "end_date": "2026-02-28"
+        },
+        "status": "completed",
+        "pdf_url": "https://storage.sanl.example.com/reports/990e8400.pdf",
+        "created_at": "2026-03-01T10:00:00Z",
+        "completed_at": "2026-03-01T10:02:30Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 5,
+      "total_pages": 1
+    }
+  },
+  "timestamp": "2026-03-06T10:30:00Z"
+}
+```
+
+---
+
+## Get Report
+
+Retrieve a specific report by ID, including AI insights and download URL.
+
+```bash GET /v1/reports/{id}
+GET /v1/reports/{id}
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Report UUID
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X GET 'http://localhost:8000/v1/reports/990e8400-e29b-41d4-a716-446655440005' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY'
+```
+
+```python Python
+report_id = '990e8400-e29b-41d4-a716-446655440005'
+
+response = requests.get(
+    f'http://localhost:8000/v1/reports/{report_id}',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key
+    }
+)
+
+report = response.json()
+```
+
+```javascript JavaScript
+const reportId = '990e8400-e29b-41d4-a716-446655440005'
+
+const response = await fetch(
+  `http://localhost:8000/v1/reports/${reportId}`,
+  {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': supabaseAnonKey
+    }
+  }
+)
+
+const report = await response.json()
+```
+</CodeGroup>
+
+### Response
+
+See the complete report object example above.
+
+---
+
+## Generate Report
+
+Create a new report with AI-powered insights. Report generation is asynchronous and may take 30-60 seconds.
+
+```bash POST /v1/reports
+POST /v1/reports
+```
+
+<Warning>
+  Report generation requires valid nutritional records for the specified period. Ensure the patient has at least 7 days of records.
+</Warning>
+
+### Request Body
+
+<ParamField body="patient_id" type="string" required>
+  ID of the patient for the report
+</ParamField>
+
+<ParamField body="type" type="string" required>
+  Type of report to generate
+  
+  Options:
+  - `progress`: Weekly/monthly progress report
+  - `summary`: Quick summary report
+  - `consultation`: Detailed consultation report
+  - `full_analysis`: Comprehensive analysis with AI insights
+</ParamField>
+
+<ParamField body="start_date" type="string" required>
+  Start date for the report period (YYYY-MM-DD)
+</ParamField>
+
+<ParamField body="end_date" type="string" required>
+  End date for the report period (YYYY-MM-DD)
+</ParamField>
+
+<ParamField body="include_ai_insights" type="boolean" default="true">
+  Whether to include AI-generated insights (requires Gemini API key)
+</ParamField>
+
+<ParamField body="language" type="string" default="es">
+  Report language
+  
+  Options: `es` (Spanish), `en` (English)
+</ParamField>
+
+<ParamField body="custom_notes" type="string">
+  Custom notes to include in the report
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X POST 'http://localhost:8000/v1/reports' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "patient_id": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "progress",
+    "start_date": "2026-03-01",
+    "end_date": "2026-03-31",
+    "include_ai_insights": true,
+    "language": "es",
+    "custom_notes": "Patient requested focus on cardiovascular health"
+  }'
+```
+
+```python Python
+report_data = {
+    'patient_id': '550e8400-e29b-41d4-a716-446655440000',
+    'type': 'progress',
+    'start_date': '2026-03-01',
+    'end_date': '2026-03-31',
+    'include_ai_insights': True,
+    'language': 'es',
+    'custom_notes': 'Patient requested focus on cardiovascular health'
+}
+
+response = requests.post(
+    'http://localhost:8000/v1/reports',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key,
+        'Content-Type': 'application/json'
+    },
+    json=report_data
+)
+
+new_report = response.json()
+```
+
+```javascript JavaScript
+const reportData = {
+  patient_id: '550e8400-e29b-41d4-a716-446655440000',
+  type: 'progress',
+  start_date: '2026-03-01',
+  end_date: '2026-03-31',
+  include_ai_insights: true,
+  language: 'es',
+  custom_notes: 'Patient requested focus on cardiovascular health'
+}
+
+const response = await fetch('http://localhost:8000/v1/reports', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'apikey': supabaseAnonKey,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(reportData)
+})
+
+const newReport = await response.json()
+```
+</CodeGroup>
+
+### Response
+
+```json 201 Created
+{
+  "success": true,
+  "data": {
+    "id": "aa0e8400-e29b-41d4-a716-446655440006",
+    "patient_id": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "progress",
+    "period": {
+      "start_date": "2026-03-01",
+      "end_date": "2026-03-31"
+    },
+    "status": "processing",
+    "created_at": "2026-03-06T14:00:00Z",
+    "estimated_completion": "2026-03-06T14:02:00Z"
+  },
+  "timestamp": "2026-03-06T14:00:00Z"
+}
+```
+
+<Tip>
+  Poll the GET /v1/reports/{id} endpoint to check when the report is completed and the PDF is ready for download.
+</Tip>
+
+---
+
+## Download Report PDF
+
+Download the generated PDF report file.
+
+```bash GET /v1/reports/{id}/download
+GET /v1/reports/{id}/download
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Report UUID
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X GET 'http://localhost:8000/v1/reports/990e8400-e29b-41d4-a716-446655440005/download' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY' \
+  -o report.pdf
+```
+
+```python Python
+report_id = '990e8400-e29b-41d4-a716-446655440005'
+
+response = requests.get(
+    f'http://localhost:8000/v1/reports/{report_id}/download',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key
+    },
+    stream=True
+)
+
+with open('report.pdf', 'wb') as f:
+    for chunk in response.iter_content(chunk_size=8192):
+        f.write(chunk)
+```
+
+```javascript JavaScript
+const reportId = '990e8400-e29b-41d4-a716-446655440005'
+
+const response = await fetch(
+  `http://localhost:8000/v1/reports/${reportId}/download`,
+  {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': supabaseAnonKey
+    }
+  }
+)
+
+const blob = await response.blob()
+const url = window.URL.createObjectURL(blob)
+const a = document.createElement('a')
+a.href = url
+a.download = 'report.pdf'
+document.body.appendChild(a)
+a.click()
+a.remove()
+```
+</CodeGroup>
+
+### Response
+
+Returns the PDF file with appropriate headers:
+
+```
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="report-990e8400.pdf"
+```
+
+---
+
+## Get AI Insights
+
+Retrieve AI-generated nutritional insights without generating a full PDF report. Useful for real-time analysis.
+
+```bash POST /v1/reports/insights
+POST /v1/reports/insights
+```
+
+<Info>
+  This endpoint uses Google Gemini AI to analyze patient data and provide instant recommendations.
+</Info>
+
+### Request Body
+
+<ParamField body="patient_id" type="string" required>
+  Patient ID for analysis
+</ParamField>
+
+<ParamField body="start_date" type="string" required>
+  Start date for analysis period (YYYY-MM-DD)
+</ParamField>
+
+<ParamField body="end_date" type="string" required>
+  End date for analysis period (YYYY-MM-DD)
+</ParamField>
+
+<ParamField body="focus_areas" type="array">
+  Specific areas to focus on
+  
+  Options: `weight_management`, `diabetes`, `hypertension`, `cardiovascular`, `general`
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X POST 'http://localhost:8000/v1/reports/insights' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "patient_id": "550e8400-e29b-41d4-a716-446655440000",
+    "start_date": "2026-03-01",
+    "end_date": "2026-03-31",
+    "focus_areas": ["diabetes", "weight_management"]
+  }'
+```
+
+```python Python
+insights_request = {
+    'patient_id': '550e8400-e29b-41d4-a716-446655440000',
+    'start_date': '2026-03-01',
+    'end_date': '2026-03-31',
+    'focus_areas': ['diabetes', 'weight_management']
+}
+
+response = requests.post(
+    'http://localhost:8000/v1/reports/insights',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key,
+        'Content-Type': 'application/json'
+    },
+    json=insights_request
+)
+
+insights = response.json()
+```
+
+```javascript JavaScript
+const insightsRequest = {
+  patient_id: '550e8400-e29b-41d4-a716-446655440000',
+  start_date: '2026-03-01',
+  end_date: '2026-03-31',
+  focus_areas: ['diabetes', 'weight_management']
+}
+
+const response = await fetch(
+  'http://localhost:8000/v1/reports/insights',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': supabaseAnonKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(insightsRequest)
+  }
+)
+
+const insights = await response.json()
+```
+</CodeGroup>
+
+### Response
+
+```json 200 OK
+{
+  "success": true,
+  "data": {
+    "patient_id": "550e8400-e29b-41d4-a716-446655440000",
+    "period": {
+      "start_date": "2026-03-01",
+      "end_date": "2026-03-31"
+    },
+    "insights": {
+      "summary": "Patient demonstrates excellent diabetes management with stable glucose levels. Weight reduction goals are being met consistently.",
+      "achievements": [
+        "Blood glucose levels maintained within target range (80-110 mg/dL)",
+        "Achieved 2.1kg weight loss over the period",
+        "Consistent carbohydrate management (average 215g/day)"
+      ],
+      "recommendations": [
+        "Continue current meal plan structure",
+        "Consider adding 15-minute post-meal walks to further improve glucose control",
+        "Gradually reduce carbohydrate intake to 200g/day over next 2 weeks"
+      ],
+      "risk_factors": [
+        "Occasional evening snacking above target calories",
+        "Weekend glucose spikes suggest need for better meal timing"
+      ],
+      "dietary_suggestions": [
+        "Replace evening snacks with protein-rich options like Greek yogurt",
+        "Add more complex carbohydrates (quinoa, sweet potato) to stabilize glucose",
+        "Increase fiber intake by 5g through additional vegetables"
+      ],
+      "medical_notes": [
+        "Consult with physician about potentially adjusting diabetes medication as control improves",
+        "Continue monitoring blood pressure weekly"
+      ]
+    },
+    "data_snapshot": {
+      "avg_glucose": 95,
+      "weight_change": -2.1,
+      "avg_daily_calories": 1850,
+      "exercise_days": 24
+    },
+    "generated_at": "2026-03-06T15:00:00Z"
+  },
+  "timestamp": "2026-03-06T15:00:00Z"
+}
+```
+
+---
+
+## Delete Report
+
+Delete a report and its associated PDF file. Requires `admin` role.
+
+```bash DELETE /v1/reports/{id}
+DELETE /v1/reports/{id}
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  Report UUID
+</ParamField>
+
+### Request Example
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE 'http://localhost:8000/v1/reports/990e8400-e29b-41d4-a716-446655440005' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'apikey: YOUR_SUPABASE_ANON_KEY'
+```
+
+```python Python
+report_id = '990e8400-e29b-41d4-a716-446655440005'
+
+response = requests.delete(
+    f'http://localhost:8000/v1/reports/{report_id}',
+    headers={
+        'Authorization': f'Bearer {access_token}',
+        'apikey': supabase_anon_key
+    }
+)
+```
+
+```javascript JavaScript
+const reportId = '990e8400-e29b-41d4-a716-446655440005'
+
+const response = await fetch(
+  `http://localhost:8000/v1/reports/${reportId}`,
+  {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': supabaseAnonKey
+    }
+  }
+)
+```
+</CodeGroup>
+
+### Response
+
+```json 200 OK
+{
+  "success": true,
+  "data": {
+    "message": "Report deleted successfully",
+    "deleted_id": "990e8400-e29b-41d4-a716-446655440005"
+  },
+  "timestamp": "2026-03-06T16:00:00Z"
+}
+```
+
+---
+
+## Report Types
+
+<AccordionGroup>
+  <Accordion title="Progress Report" icon="chart-line">
+    **Best for**: Weekly or monthly patient progress tracking
+    
+    **Includes**:
+    - Weight and BMI trends
+    - Caloric intake analysis
+    - Activity level summary
+    - Basic AI recommendations
+    
+    **Generation time**: 30-45 seconds
+  </Accordion>
+  
+  <Accordion title="Summary Report" icon="clipboard-list">
+    **Best for**: Quick overview for consultations
+    
+    **Includes**:
+    - Key metrics snapshot
+    - Recent achievements
+    - Top 3 recommendations
+    
+    **Generation time**: 15-20 seconds
+  </Accordion>
+  
+  <Accordion title="Consultation Report" icon="user-doctor">
+    **Best for**: Detailed patient consultations
+    
+    **Includes**:
+    - Comprehensive nutritional analysis
+    - Detailed meal-by-meal breakdown
+    - Exercise and activity correlation
+    - Extended AI insights
+    
+    **Generation time**: 45-60 seconds
+  </Accordion>
+  
+  <Accordion title="Full Analysis Report" icon="microscope">
+    **Best for**: Quarterly reviews or medical referrals
+    
+    **Includes**:
+    - Complete historical analysis
+    - Advanced statistical trends
+    - Risk assessment
+    - Long-term recommendations
+    - Medication and condition correlation
+    
+    **Generation time**: 60-90 seconds
+  </Accordion>
+</AccordionGroup>
+
+## AI Configuration
+
+The Reports API uses Google Gemini AI for generating insights. Configure your Gemini API key:
+
+```bash .env
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+<Warning>
+  AI insights require a valid Gemini API key. Reports will still generate without AI insights if `include_ai_insights` is set to `false`.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="View Patients" icon="users" href="/api/endpoints/patients">
+    Manage patient profiles and demographics
+  </Card>
+  <Card title="Nutritional Records" icon="clipboard-medical" href="/api/endpoints/records">
+    Create and manage nutritional tracking data
+  </Card>
+</CardGroup>

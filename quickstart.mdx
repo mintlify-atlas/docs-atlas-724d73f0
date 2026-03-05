@@ -1,80 +1,293 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get SANL up and running on your local machine in minutes
 ---
 
-## Get started in three steps
+# Quickstart Guide
 
-Get your documentation site running locally and make your first customization.
+This guide will help you set up SANL (Sistema De Atención Nutricional En Línea) on your local development environment. You'll have both the frontend and backend running in under 10 minutes.
 
-### Step 1: Set up your local environment
+## Prerequisites
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+Before you begin, ensure you have the following installed:
 
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+- **Node.js 20+** - [Download here](https://nodejs.org/)
+- **Python 3.8+** - [Download here](https://python.org/)
+- **npm, yarn, or pnpm** - Package manager for Node.js
+- **Git** - For cloning the repository
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+You'll also need API keys for Google Gemini and a Supabase project. Don't worry, we'll guide you through the setup.
 </Note>
+
+## Step-by-Step Setup
+
+<Steps>
+  <Step title="Clone the Repository">
+    First, clone the SANL repository to your local machine:
+
+    ```bash
+    git clone <your-repository-url>
+    cd SANL
+    ```
+  </Step>
+
+  <Step title="Set Up the Backend">
+    Navigate to the backend directory and run the automated setup script:
+
+    ```bash
+    cd backend
+    python3 -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    pip install -r requirements.txt
+    ```
+
+    Or use the convenience script:
+
+    ```bash
+    chmod +x setup_backend.sh
+    ./setup_backend.sh
+    ```
+
+    ### Configure Backend Environment Variables
+
+    Create a `.env` file in the `backend` directory:
+
+    ```bash
+    cp .env.example .env
+    ```
+
+    Edit the `.env` file with your credentials:
+
+    ```bash
+    # IA - Gemini 1.5 Flash (RF-11)
+    GEMINI_API_KEY=your_gemini_api_key_here
+
+    # Base de Datos - Supabase (RNF-04)
+    SUPABASE_URL=your_supabase_url_here
+    SUPABASE_ANON_KEY=your_supabase_anon_key_here
+    ```
+
+    <Warning>
+    Never commit your `.env` file to version control. The `.env.example` file is provided as a template.
+    </Warning>
+  </Step>
+
+  <Step title="Get Your API Keys">
+    You'll need to obtain the following credentials:
+
+    ### Google Gemini API Key
+    1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+    2. Sign in with your Google account
+    3. Create a new API key
+    4. Copy the key to your `GEMINI_API_KEY` environment variable
+
+    ### Supabase Credentials
+    1. Go to [Supabase](https://supabase.com/) and create a free account
+    2. Create a new project
+    3. Navigate to **Settings** → **API**
+    4. Copy your **Project URL** to `SUPABASE_URL`
+    5. Copy your **anon public** key to `SUPABASE_ANON_KEY`
+
+    <Info>
+    The Supabase free tier is sufficient for development and testing purposes.
+    </Info>
+  </Step>
+
+  <Step title="Set Up the Frontend">
+    Open a new terminal window and navigate to the frontend directory:
+
+    ```bash
+    cd frontend
+    ```
+
+    Install dependencies using your preferred package manager:
+
+    <CodeGroup>
+    ```bash npm
+    npm install
+    ```
+
+    ```bash yarn
+    yarn install
+    ```
+
+    ```bash pnpm
+    pnpm install
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Start the Development Servers">
+    ### Start the Backend Server
+
+    In the backend terminal (with virtual environment activated):
+
+    ```bash
+    uvicorn main:app --reload
+    ```
+
+    The backend API will be available at `http://localhost:8000`
+
+    ### Start the Frontend Server
+
+    In the frontend terminal, run:
+
+    <CodeGroup>
+    ```bash npm
+    npm run dev
+    ```
+
+    ```bash yarn
+    yarn dev
+    ```
+
+    ```bash pnpm
+    pnpm dev
+    ```
+    </CodeGroup>
+
+    The frontend application will be available at `http://localhost:3000`
+  </Step>
+
+  <Step title="Verify the Installation">
+    ### Test the Frontend
+    1. Open your browser and navigate to `http://localhost:3000`
+    2. You should see the SANL application interface
+
+    ### Test the Backend
+    1. Navigate to `http://localhost:8000/docs`
+    2. You should see the FastAPI interactive API documentation (Swagger UI)
+
+    <Info>
+    FastAPI automatically generates interactive API documentation at `/docs` and alternative documentation at `/redoc`.
+    </Info>
+  </Step>
+</Steps>
+
+## Project Structure
+
+Once everything is set up, here's what your project structure looks like:
+
+```
+SANL/
+├── frontend/
+│   ├── src/
+│   │   ├── pages/          # Next.js pages
+│   │   └── styles/         # CSS and Tailwind styles
+│   ├── public/             # Static assets
+│   ├── package.json        # Frontend dependencies
+│   └── next.config.ts      # Next.js configuration
+│
+├── backend/
+│   ├── venv/               # Python virtual environment
+│   ├── requirements.txt    # Python dependencies
+│   ├── .env               # Environment variables (not in git)
+│   └── .env.example       # Environment template
+│
+└── docs/                   # Documentation
+```
+
+## Available Scripts
+
+### Frontend Scripts
+
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run start    # Start production server
+npm run lint     # Run ESLint
+```
+
+### Backend Scripts
+
+The backend uses FastAPI with Uvicorn. Common commands:
+
+```bash
+# Development with auto-reload
+uvicorn main:app --reload
+
+# Production
+uvicorn main:app --host 0.0.0.0 --port 8000
+
+# With specific number of workers
+uvicorn main:app --workers 4
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Port Already in Use">
+    If port 3000 or 8000 is already in use, you can change the port:
+
+    **Frontend:**
+    ```bash
+    npm run dev -- -p 3001
+    ```
+
+    **Backend:**
+    ```bash
+    uvicorn main:app --reload --port 8001
+    ```
+  </Accordion>
+
+  <Accordion title="Python Virtual Environment Issues">
+    If you have trouble with the virtual environment:
+
+    ```bash
+    # Remove existing venv
+    rm -rf venv
+
+    # Recreate it
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    ```
+  </Accordion>
+
+  <Accordion title="Module Not Found Errors">
+    Make sure all dependencies are installed:
+
+    **Frontend:**
+    ```bash
+    rm -rf node_modules package-lock.json
+    npm install
+    ```
+
+    **Backend:**
+    ```bash
+    pip install -r requirements.txt --force-reinstall
+    ```
+  </Accordion>
+
+  <Accordion title="API Connection Issues">
+    Verify your environment variables are set correctly and that both servers are running. Check the browser console and terminal for error messages.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+Now that you have SANL running locally, you can:
+
+- Explore the API documentation at `http://localhost:8000/docs`
+- Start building features on the frontend
+- Test the AI integration with Google Gemini
+- Set up your Supabase database schema
+- Review the codebase and architecture
+
+<Info>
+  If you encounter any issues during setup, check the troubleshooting section above or consult the [Environment Configuration](/setup/environment) guide.
+</Info>
+
+## Development Tips
+
+<Info>
+**Hot Reload**: Both Next.js and FastAPI support hot reloading. Changes to your code will automatically reflect in the browser without manual restarts.
+</Info>
+
+<Warning>
+**Environment Variables**: Remember to restart your development servers after changing environment variables in `.env` files.
+</Warning>
+
+Happy coding!

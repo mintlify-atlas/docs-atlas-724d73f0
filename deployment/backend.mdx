@@ -1,0 +1,458 @@
+---
+title: Backend Deployment
+description: Deploy the SANL FastAPI backend to production environments
+---
+
+The SANL backend is built with FastAPI and uses Uvicorn as the ASGI server, providing high-performance API endpoints for the application.
+
+## Prerequisites
+
+- Python 3.8 or higher
+- Virtual environment tool (venv)
+- Access to deployment server
+- Required API keys (Gemini, Supabase)
+
+## Tech Stack
+
+From `requirements.txt`:
+
+```txt requirements.txt
+fastapi
+uvicorn
+google-generativeai
+supabase
+python-dotenv
+fpdf2
+```
+
+## Local Setup
+
+The project includes a setup script for quick backend initialization:
+
+```bash setup_backend.sh
+#!/bin/bash
+echo "🚀 Configurando Backend SANL..."
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+echo "✅ Backend listo."
+```
+
+<Steps>
+  <Step title="Run Setup Script">
+    Execute the automated setup:
+
+    ```bash
+    chmod +x setup_backend.sh
+    ./setup_backend.sh
+    ```
+  </Step>
+
+  <Step title="Configure Environment Variables">
+    Copy the example environment file and configure:
+
+    ```bash
+    cd backend
+    cp .env.example .env
+    ```
+
+    Edit `.env` with your credentials:
+
+    ```bash .env
+    # IA - Gemini 1.5 Flash (RF-11)
+    GEMINI_API_KEY=your_gemini_api_key_here
+
+    # Base de Datos - Supabase (RNF-04)
+    SUPABASE_URL=your_supabase_url_here
+    SUPABASE_ANON_KEY=your_supabase_anon_key_here
+    ```
+
+    <Warning>
+      Never commit `.env` files to version control. The `.env.example` file should only contain placeholder values.
+    </Warning>
+  </Step>
+
+  <Step title="Activate Virtual Environment">
+    Activate the Python virtual environment:
+
+    ```bash
+    source venv/bin/activate
+    ```
+  </Step>
+</Steps>
+
+## Production Deployment
+
+### Option 1: Uvicorn Production Server
+
+<Steps>
+  <Step title="Install Dependencies">
+    Set up the production environment:
+
+    ```bash
+    cd backend
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    ```
+  </Step>
+
+  <Step title="Configure Production Environment">
+    Create a production environment file:
+
+    ```bash .env.production
+    # IA - Gemini 1.5 Flash
+    GEMINI_API_KEY=your_production_gemini_key
+
+    # Database - Supabase
+    SUPABASE_URL=https://your-project.supabase.co
+    SUPABASE_ANON_KEY=your_production_anon_key
+
+    # Production Settings
+    ENVIRONMENT=production
+    LOG_LEVEL=info
+    ```
+  </Step>
+
+  <Step title="Start Uvicorn with Production Settings">
+    Run Uvicorn with production-optimized configuration:
+
+    ```bash
+    uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+    ```
+
+    <Info>
+      Adjust `--workers` based on CPU cores. Recommended: `(2 x cores) + 1`
+    </Info>
+  </Step>
+</Steps>
+
+### Uvicorn Production Options
+
+<CodeGroup>
+
+```bash Basic Production
+uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+```bash With SSL
+uvicorn main:app \
+  --host 0.0.0.0 \
+  --port 443 \
+  --ssl-keyfile /path/to/key.pem \
+  --ssl-certfile /path/to/cert.pem \
+  --workers 4
+```
+
+```bash With Proxy Headers
+uvicorn main:app \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --proxy-headers \
+  --forwarded-allow-ips='*' \
+  --workers 4
+```
+
+```bash Production with Logging
+uvicorn main:app \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --workers 4 \
+  --log-level info \
+  --access-log
+```
+
+</CodeGroup>
+
+### Option 2: Docker Deployment
+
+Create a `Dockerfile` in the backend directory:
+
+```dockerfile Dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create non-root user
+RUN useradd -m -u 1000 sanl && chown -R sanl:sanl /app
+USER sanl
+
+# Expose port
+EXPOSE 8000
+
+# Run with uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+```
+
+Build and run with Docker:
+
+<Steps>
+  <Step title="Build Docker Image">
+    ```bash
+    docker build -t sanl-backend .
+    ```
+  </Step>
+
+  <Step title="Run Container">
+    ```bash
+    docker run -d \
+      --name sanl-backend \
+      -p 8000:8000 \
+      --env-file .env.production \
+      sanl-backend
+    ```
+  </Step>
+
+  <Step title="Verify Deployment">
+    ```bash
+    docker logs sanl-backend
+    curl http://localhost:8000/docs
+    ```
+  </Step>
+</Steps>
+
+### Option 3: Docker Compose
+
+Create a `docker-compose.yml` file:
+
+```yaml docker-compose.yml
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    env_file:
+      - ./backend/.env.production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+Deploy with Docker Compose:
+
+```bash
+docker-compose up -d
+```
+
+## Process Management with Systemd
+
+For production servers, use systemd to manage the backend service:
+
+<Steps>
+  <Step title="Create Service File">
+    Create `/etc/systemd/system/sanl-backend.service`:
+
+    ```ini sanl-backend.service
+    [Unit]
+    Description=SANL FastAPI Backend
+    After=network.target
+
+    [Service]
+    Type=simple
+    User=sanl
+    Group=sanl
+    WorkingDirectory=/opt/sanl/backend
+    Environment="PATH=/opt/sanl/backend/venv/bin"
+    EnvironmentFile=/opt/sanl/backend/.env.production
+    ExecStart=/opt/sanl/backend/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+    Restart=always
+    RestartSec=10
+
+    [Install]
+    WantedBy=multi-user.target
+    ```
+  </Step>
+
+  <Step title="Enable and Start Service">
+    ```bash
+    sudo systemctl daemon-reload
+    sudo systemctl enable sanl-backend
+    sudo systemctl start sanl-backend
+    ```
+  </Step>
+
+  <Step title="Monitor Service">
+    ```bash
+    sudo systemctl status sanl-backend
+    sudo journalctl -u sanl-backend -f
+    ```
+  </Step>
+</Steps>
+
+## Reverse Proxy Configuration
+
+### Nginx
+
+Configure Nginx as a reverse proxy:
+
+```nginx nginx.conf
+upstream sanl_backend {
+    server 127.0.0.1:8000;
+}
+
+server {
+    listen 80;
+    server_name api.sanl.com;
+
+    # Redirect to HTTPS
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name api.sanl.com;
+
+    ssl_certificate /etc/ssl/certs/sanl.crt;
+    ssl_certificate_key /etc/ssl/private/sanl.key;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    location / {
+        proxy_pass http://sanl_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # WebSocket support (if needed)
+    location /ws {
+        proxy_pass http://sanl_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+```
+
+## Environment Variables
+
+<Warning>
+  Secure your environment variables in production. Never expose API keys in logs or error messages.
+</Warning>
+
+Required environment variables from `.env.example`:
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `GEMINI_API_KEY` | Google Gemini AI API key for RF-11 requirement | Yes |
+| `SUPABASE_URL` | Supabase project URL for RNF-04 database | Yes |
+| `SUPABASE_ANON_KEY` | Supabase anonymous key for client access | Yes |
+
+Additional production variables:
+
+```bash
+# Optional production settings
+ENVIRONMENT=production
+LOG_LEVEL=info
+CORS_ORIGINS=https://sanl.com,https://www.sanl.com
+MAX_WORKERS=4
+```
+
+## Health Checks and Monitoring
+
+<Accordion title="Health Check Endpoint">
+  Implement a health check endpoint in your FastAPI application:
+
+  ```python
+  @app.get("/health")
+  async def health_check():
+      return {
+          "status": "healthy",
+          "timestamp": datetime.now().isoformat()
+      }
+  ```
+</Accordion>
+
+<Accordion title="Monitoring with Prometheus">
+  Add Prometheus metrics to your FastAPI app:
+
+  ```bash
+  pip install prometheus-fastapi-instrumentator
+  ```
+
+  ```python
+  from prometheus_fastapi_instrumentator import Instrumentator
+
+  Instrumentator().instrument(app).expose(app)
+  ```
+</Accordion>
+
+<Accordion title="Logging Configuration">
+  Configure structured logging for production:
+
+  ```python
+  import logging
+  from logging.handlers import RotatingFileHandler
+
+  handler = RotatingFileHandler(
+      "logs/sanl-backend.log",
+      maxBytes=10485760,  # 10MB
+      backupCount=5
+  )
+  logging.basicConfig(level=logging.INFO, handlers=[handler])
+  ```
+</Accordion>
+
+## Troubleshooting
+
+### Port Already in Use
+
+```bash
+# Find process using port 8000
+sudo lsof -i :8000
+
+# Kill the process
+sudo kill -9 <PID>
+```
+
+### Virtual Environment Issues
+
+```bash
+# Recreate virtual environment
+rm -rf venv
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Permission Denied Errors
+
+```bash
+# Fix ownership
+sudo chown -R $USER:$USER /path/to/backend
+
+# Fix permissions
+chmod +x setup_backend.sh
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Deploy Frontend" icon="desktop" href="/deployment/frontend">
+    Deploy the Next.js frontend application
+  </Card>
+  <Card title="Production Best Practices" icon="shield-check" href="/deployment/production">
+    Security and optimization guidelines
+  </Card>
+</CardGroup>
