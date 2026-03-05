@@ -1,0 +1,98 @@
+{
+  "projectType": "saas",
+  "projectName": "SANL",
+  "projectDescription": "Digital health platform for nutritional monitoring with clinical records digitization and AI-powered insights",
+  "theme": "almond",
+  "primaryColor": "#4CAF50",
+  "lightColor": "#81C784",
+  "darkColor": "#2E7D32",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/clinical-records",
+              "features/nutritional-tracking",
+              "features/ai-insights",
+              "features/pdf-reports"
+            ]
+          },
+          {
+            "group": "User Guides",
+            "pages": [
+              "guides/patient-management",
+              "guides/nutrition-plans",
+              "guides/data-analysis"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "setup/installation",
+              "setup/environment",
+              "setup/database",
+              "setup/ai-integration"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/overview",
+              "api/authentication"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/endpoints/patients",
+              "api/endpoints/records",
+              "api/endpoints/reports"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Deployment",
+        "groups": [
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/frontend",
+              "deployment/backend",
+              "deployment/production"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Digital clinical record management",
+    "AI-powered nutritional analysis with Google Gemini",
+    "Automated PDF report generation",
+    "Real-time patient tracking",
+    "Supabase data integration"
+  ],
+  "publicApiSurface": [
+    "FastAPI backend endpoints",
+    "Next.js API routes",
+    "Supabase database integration",
+    "Google Gemini AI integration",
+    "PDF generation service"
+  ]
+}
